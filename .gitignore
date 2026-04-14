@@ -1,0 +1,34 @@
+# Data (large files, GISAID-restricted content)
+data/raw/
+data/metadata/
+data/climate/
+data/alignments/
+data/trees/
+data/codeml/
+data/rates/
+
+# Keep placeholder files
+!data/**/.gitkeep
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+
+# PAML temp files
+*.ctl
+rst
+rst1
+rub
+lnf
+2ML.*
+
+# OS
+.DS_Store

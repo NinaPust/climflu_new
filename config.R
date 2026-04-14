@@ -1,0 +1,65 @@
+# config.R
+# Central configuration for the climflu_new analysis pipeline.
+# All scripts source this file. Do NOT hardcode paths in scripts.
+
+library(here)
+
+# ── Gene segments ─────────────────────────────────────────────────────────────
+GENES <- c("H1", "H3", "N1", "N2")
+
+# ── Data paths (relative to project root via here::here()) ───────────────────
+PATHS <- list(
+  raw        = here("data", "raw"),
+  metadata   = here("data", "metadata"),
+  climate    = here("data", "climate"),
+  alignments = here("data", "alignments"),
+  trees      = here("data", "trees"),
+  codeml     = here("data", "codeml"),
+  rates      = here("data", "rates"),
+  scripts    = here("scripts"),
+  R          = here("R")
+)
+
+# ── External tool paths ───────────────────────────────────────────────────────
+# Update these to match the tool locations on your system.
+TOOLS <- list(
+  mafft    = Sys.which("mafft"),       # or full path, e.g. "/usr/local/bin/mafft"
+  macse    = "/path/to/macse_v2.07.jar",
+  maple    = "/path/to/MAPLE",
+  codeml   = Sys.which("codeml"),
+  treetime = Sys.which("treetime")
+)
+
+# Warn if any tool is not found
+missing_tools <- names(TOOLS)[sapply(TOOLS, function(p) nchar(p) == 0 || p == "/path/to/MAPLE" || grepl("^/path/to/", p))]
+if (length(missing_tools) > 0) {
+  warning("Tool paths not configured in config.R: ", paste(missing_tools, collapse = ", "))
+}
+
+# ── Analysis parameters ───────────────────────────────────────────────────────
+PARAMS <- list(
+  # Date range for sample inclusion
+  date_from = "2009-01-01",
+  date_to   = "2023-12-31",
+
+  # MAPLE tree pruning thresholds (branch length)
+  prune_min_bl = 0.0,    # Remove branches shorter than this (round 1)
+  prune_max_bl = 0.08,   # Remove branches longer than this (round 2)
+
+  # MACSE batch size (number of accessions per lettered subset)
+  macse_batch_size = 50,
+
+  # Minimum gap threshold for alignment trimming (codon columns)
+  trim_gap_threshold = 0.5,
+
+  # PAML codeml model (0 = one ratio, 1 = free ratios)
+  codeml_model = 0,
+
+  # phylolm: Pagel's lambda method
+  phylolm_method = "lambda",
+
+  # Number of threads for MAFFT
+  mafft_threads = 4
+)
+
+message("config.R loaded. Project root: ", here())
