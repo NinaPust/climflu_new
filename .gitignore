@@ -30,5 +30,11 @@ rub
 lnf
 2ML.*
 
+# Exploratory / diagnostic scripts (not part of reproducible pipeline)
+scripts/00_metadata/00z_*.R
+figures/metadata_diagnostics/
+
 # OS
 .DS_Store
+
+/home/nina/climflu_new/CLAUDE.md

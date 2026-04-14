@@ -2,8 +2,8 @@
 
 Studying the effects of environmental variables (temperature, relative humidity) on the molecular evolution of Influenza A surface proteins — a redo of [Influenza_env](https://github.com/NinaPust/Influenza_env) with GISAID data and improved methods.
 
-**Gene segments:** H1, H3, N1, N2  
-**Environmental data:** ERA5-Land (Google Earth Engine)  
+**Gene segments:** H1, H3, N1, N2 + PA (negative control)  
+**Environmental data:** ERA5-Land (Copernicus CDS)  
 **Statistical approach:** phylogenetic comparative regression (phylolm)
 
 ---
@@ -12,7 +12,7 @@ Studying the effects of environmental variables (temperature, relative humidity)
 
 ```
 Stage 00 — Metadata
-  GISAID export (manual) → parse metadata → attach ERA5 climate
+  GISAID export (manual) → parse metadata → geocode locations → attach ERA5 climate
 
 Stage 01 — Alignment
   MAFFT multiple alignment → MACSE pairwise codon alignment
@@ -30,17 +30,17 @@ Stage 03 — Rates & analysis
 
 **GISAID sequences cannot be downloaded programmatically.** You must export them manually from [gisaid.org](https://gisaid.org).
 
-### Required exports (one per gene segment: H1, H3, N1, N2)
+### Required exports
 
-From the EpiFlu database, download:
+From the EpiFlu database, download sequences and metadata for each subtype (H1N1, H3N2) and for PA segments. Filter to **original passage only**.
 
-| File | Naming convention |
-|------|-------------------|
-| Sequence FASTA | `data/raw/{gene}_sequences.fasta` |
-| Metadata TSV | `data/raw/{gene}_metadata.tsv` |
+| File type | Examples |
+|-----------|----------|
+| Sequence FASTA | `H1_2000_19.fasta`, `H3_2000_18.fasta` + `H3_2019.fasta` |
+| Metadata XLS | `H1N1_meta.xls`, `H3N2_2000_18_meta.xls` + `H3N2_2019_metadata.xls` |
+| PA FASTA | `PA_H1N1_2000_19.fasta`, `PA_H3N2_2000_18.fasta` + `PA_H3N2_2019.fasta` |
 
-**Metadata fields to include when downloading** (select in the GISAID export dialog):  
-Accession ID, Virus name, Collection date, Location, Latitude, Longitude, Host
+FASTA files split across date ranges are automatically merged by the parse script. Lat/lon are not in GISAID EpiFlu exports — coordinates are added by geocoding (script `01_geocode.R`).
 
 These files are gitignored and must be obtained independently.
 
@@ -51,8 +51,10 @@ These files are gitignored and must be obtained independently.
 ### R packages
 
 ```r
-install.packages(c("here", "dplyr", "readr", "stringr", "lubridate",
-                   "ape", "phangorn", "phylolm", "MuMIn"))
+install.packages(c("here", "dplyr", "readr", "readxl", "stringr", "lubridate",
+                   "tidygeocoder", "terra", "sf", "rnaturalearth",
+                   "ape", "phangorn", "phylolm", "MuMIn",
+                   "ggplot2", "forcats", "patchwork"))
 ```
 
 Or restore the full environment:
@@ -62,12 +64,14 @@ Or restore the full environment:
 renv::restore()
 ```
 
-### Python packages
+### Python environment
 
 ```bash
-pip install earthengine-api pandas
-earthengine authenticate   # first time only
+mamba create -n climflu python=3.12 pandas earthengine-api cdsapi xarray netcdf4 -y
+conda activate climflu
 ```
+
+ERA5 climate data is fetched from the Copernicus CDS (not GEE). Register at [cds.climate.copernicus.eu](https://cds.climate.copernicus.eu), accept the ERA5-Land licence, and create `~/.cdsapirc` with your API key.
 
 ### External CLI tools
 
@@ -100,7 +104,8 @@ Run scripts in order. Each script accepts an optional `--gene` argument; omit it
 ```bash
 # Stage 00 — Metadata
 Rscript scripts/00_metadata/00_parse_gisaid.R
-python  scripts/00_metadata/01_attach_climate.py --all
+Rscript scripts/00_metadata/01_geocode.R
+conda activate climflu && python scripts/00_metadata/02_attach_climate.py --all
 
 # Stage 01 — Alignment
 Rscript scripts/01_alignment/01_mafft.R
@@ -121,7 +126,8 @@ Rscript scripts/03_rates_analysis/02_phylolm.R
 
 ```bash
 Rscript scripts/00_metadata/00_parse_gisaid.R --gene H1
-python  scripts/00_metadata/01_attach_climate.py --gene H1
+Rscript scripts/00_metadata/01_geocode.R
+conda activate climflu && python scripts/00_metadata/02_attach_climate.py --gene H1
 ```
 
 ---
@@ -141,5 +147,6 @@ python  scripts/00_metadata/01_attach_climate.py --gene H1
 ## Acknowledgements
 
 - Sequence data: [GISAID EpiFlu](https://gisaid.org) — please cite GISAID when using this data.
-- Climate data: ERA5-Land via [Google Earth Engine](https://earthengine.google.com).
+- Climate data: ERA5-Land via [Copernicus CDS](https://cds.climate.copernicus.eu).
+- Geocoding: [Nominatim / OpenStreetMap](https://nominatim.openstreetmap.org) via `tidygeocoder`.
 - Evolutionary analysis tools: MAFFT, MACSE, MAPLE, PAML, TreeTime.
