@@ -80,7 +80,7 @@ merge_fasta <- function(gene) {
   if (length(missing) > 0) {
     warning("Missing FASTA part(s), skipping merge for ", gene, ": ",
             paste(missing, collapse = ", "))
-    return(invisible(NULL))
+    return(invisible(NULL)) 
   }
 
   # Copy first part, then append any additional parts (OS-level, fast)

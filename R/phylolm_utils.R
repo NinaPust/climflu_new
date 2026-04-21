@@ -12,16 +12,16 @@
 #' @param gene     Gene segment label (for output table).
 #' @return Tidy data frame with one row per coefficient.
 run_phylolm <- function(formula, data, tree, method = "lambda",
-                        subset = "full", response = NA_character_, gene = NA_character_) {
+                        subset = "full", response = NA_character_,
+                        gene = NA_character_) {
+  tree <- ape::unroot(tree)
   fit <- phylolm::phylolm(formula, data = data, phy = tree, model = method)
 
   coef_df <- as.data.frame(summary(fit)$coefficients)
   coef_df$term <- rownames(coef_df)
   rownames(coef_df) <- NULL
 
-  names(coef_df) <- tolower(gsub("Pr\\(>\\|t\\|\\)", "p.value",
-                                  gsub("Std. Error", "std_error",
-                                       gsub("t value", "t_value", names(coef_df)))))
+  names(coef_df) <- c("estimate", "std_error", "t_value", "p.value", "term")
 
   coef_df$gene     <- gene
   coef_df$subset   <- subset
@@ -43,6 +43,6 @@ run_phylolm <- function(formula, data, tree, method = "lambda",
 #' @return Combined data frame, sorted by gene and subset.
 format_phylolm_table <- function(models) {
   df <- dplyr::bind_rows(models)
-  df <- dplyr::arrange(df, gene, subset, response, term)
+  df <- dplyr::arrange(df, .data$gene, .data$subset, .data$response, .data$term)
   df
 }

@@ -36,5 +36,14 @@ scale_env_vars <- function(df) {
   if ("pop_density" %in% names(df)) {
     df$scaled_pop_density <- scale(log1p(df$pop_density))[, 1]
   }
+  if (all(c("month", "latitude") %in% names(df))) {
+    # Hemisphere-adjusted cosine of seasonal cycle.
+    # Shift SH months by 6 so that peak flu season aligns with month 1 in both
+    # hemispheres. Result: +1 = peak flu season, -1 = trough.
+    adj_month        <- ifelse(df$latitude >= 0, df$month,
+                               ((df$month - 1L + 6L) %% 12L) + 1L)
+    df$season_cos    <- cos(2 * pi * (adj_month - 1) / 12)
+    df$scaled_season <- scale(df$season_cos)[, 1]
+  }
   df
 }

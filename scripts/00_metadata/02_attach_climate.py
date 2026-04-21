@@ -100,6 +100,8 @@ def download_era5_month(client, year: int, month: int,
     print(f"    Downloading ERA5-Land for {year}-{month:02d} "
           f"(area: {area})...")
 
+    zip_file = nc_file.with_suffix(".zip")
+
     client.retrieve(
         "reanalysis-era5-land-monthly-means",
         {
@@ -111,8 +113,20 @@ def download_era5_month(client, year: int, month: int,
             "area": area,
             "data_format": "netcdf",
         },
-        str(nc_file),
+        str(zip_file),
     )
+
+    # CDS delivers NetCDF inside a zip archive — extract it
+    import zipfile
+    with zipfile.ZipFile(zip_file, "r") as zf:
+        nc_names = [n for n in zf.namelist() if n.endswith(".nc")]
+        if not nc_names:
+            raise RuntimeError(f"No .nc file found in {zip_file}")
+        zf.extract(nc_names[0], NC_DIR)
+        extracted = NC_DIR / nc_names[0]
+        if extracted != nc_file:
+            extracted.rename(nc_file)
+    zip_file.unlink()
 
     return nc_file
 
@@ -298,9 +312,11 @@ def process_genes(genes: list[str]):
             how="left",
         ).drop(columns=["lat", "lon"], errors="ignore")
 
+        n_before = len(out_df)
+        out_df = out_df.dropna(subset=["era5_temp_mean"])
         out_df.to_csv(out_path, index=False)
-        n_ok = out_df["era5_temp_mean"].notna().sum()
-        print(f"  [{gene}] {n_ok}/{len(out_df)} rows with climate data "
+        print(f"  [{gene}] {len(out_df)}/{n_before} rows kept "
+              f"(dropped {n_before - len(out_df)} with NA climate) "
               f"→ {out_path.name}")
 
 

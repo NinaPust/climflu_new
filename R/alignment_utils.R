@@ -33,9 +33,8 @@ trim_codons <- function(alignment, gap_threshold = 0.5) {
   n_seq  <- nrow(mat)
   n_cols <- ncol(mat)
 
-  # gap character is "-" (byte 0x2D) in DNAbin; ape represents as 4 (N) or 0xf0
-  # Safer to convert to character matrix
-  char_mat <- apply(mat, 2, function(col) as.character(ape::as.DNAbin(col)))
+  # Convert DNAbin matrix to character matrix for gap detection
+  char_mat <- as.character(mat)
   gap_freq <- colMeans(char_mat == "-", na.rm = TRUE)
 
   # Mark codons to keep: all 3 positions must be below threshold

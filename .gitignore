@@ -6,7 +6,8 @@ data/alignments/
 data/trees/
 data/codeml/
 data/rates/
-
+data/test/
+data/population/ 
 # Keep placeholder files
 !data/**/.gitkeep
 
@@ -36,5 +37,5 @@ figures/metadata_diagnostics/
 
 # OS
 .DS_Store
-
-/home/nina/climflu_new/CLAUDE.md
+CLAUDE.md
+scripts/00_metadata/00z_explore_metadata.R
