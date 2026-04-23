@@ -56,7 +56,7 @@ PARAMS <- list(
 
   # MAPLE tree pruning thresholds (branch length)
   prune_min_bl = 0.0,    # Remove branches shorter than this (round 1)
-  prune_max_bl = 0.08,   # Remove branches longer than this (round 2)
+  prune_max_bl = 0.028,  # Remove branches longer than this (round 2)
 
   # MACSE batch size (number of accessions per lettered subset)
   macse_batch_size = 50,

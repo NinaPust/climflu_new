@@ -26,6 +26,7 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
   library(MuMIn)
+  library(tidyr)
 })
 
 source(here("config.R"))
@@ -102,6 +103,18 @@ for (gene in genes) {
 
   message("  ", nrow(df), " taxa in analysis")
 
+  # ── VIF (computed from OLS — phylogenetic structure doesn't affect collinearity)
+  if (length(predictors) > 1) {
+    vif_vals <- sapply(predictors, function(p) {
+      others <- setdiff(predictors, p)
+      f  <- as.formula(paste(p, "~", paste(others, collapse = " + ")))
+      r2 <- summary(lm(f, data = df))$r.squared
+      round(1 / (1 - r2), 2)
+    })
+    message("  VIF: ", paste(names(vif_vals), vif_vals, sep = " = ",
+                              collapse = "  |  "))
+  }
+
   all_results <- list()
 
   for (cfg in list(list(subset_name = "full", data = df))) {
@@ -139,6 +152,56 @@ for (gene in genes) {
   write_csv(results_df, out_path)
   message("  Written: ", out_path)
   print(results_df |> select(gene, subset, response, term, estimate, p.value))
+}
+
+# ── FDR correction across all genes and responses ─────────────────────────────
+# Apply Benjamini-Hochberg correction over all predictor terms (not intercepts)
+# across all genes and response variables. Per-gene CSVs are left unchanged;
+# corrected results go to a single combined file.
+message("\nApplying BH-FDR correction across all tests...")
+
+PREDICTOR_TERMS <- c("scaled_temp", "scaled_humidity",
+                     "scaled_pop_density", "scaled_season")
+
+all_res <- lapply(genes, function(g) {
+  path <- file.path(paths_rates, paste0(g, "_phylolm_results.csv"))
+  if (!file.exists(path)) return(NULL)
+  read_csv(path, show_col_types = FALSE)
+}) |> bind_rows()
+
+predictor_rows <- all_res$term %in% PREDICTOR_TERMS
+all_res$p.fdr <- NA_real_
+all_res$p.fdr[predictor_rows] <- p.adjust(
+  all_res$p.value[predictor_rows], method = "BH"
+)
+
+combined_path <- file.path(paths_rates, "all_phylolm_results.csv")
+write_csv(all_res, combined_path)
+message("  Written: ", combined_path)
+
+message("\nSignificant after FDR (p.fdr < 0.05):")
+sig <- all_res |>
+  filter(term %in% PREDICTOR_TERMS, p.fdr < 0.05) |>
+  select(gene, response, term, estimate, p.value, p.fdr) |>
+  mutate(across(c(estimate), \(x) round(x, 4)),
+         across(c(p.value, p.fdr), \(x) signif(x, 3))) |>
+  arrange(p.fdr)
+print(sig)
+
+message("\nCorrelation matrix of predictors (first gene with full data):")
+ref_gene <- genes[1]
+ref_path <- file.path(paths_rates, paste0(ref_gene, "_rates.csv"))
+if (file.exists(ref_path)) {
+  ref_df <- read_csv(ref_path, show_col_types = FALSE)
+  avail  <- intersect(PREDICTOR_TERMS, names(ref_df))
+  if (length(avail) > 1) {
+    cormat <- ref_df |>
+      select(all_of(avail)) |>
+      drop_na() |>
+      cor() |>
+      round(2)
+    print(cormat)
+  }
 }
 
 message("\nDone.")

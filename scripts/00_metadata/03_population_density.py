@@ -113,12 +113,21 @@ def pixel_area_km2_from_raster(src, lat: float) -> float:
         return (deg * math.pi / 180.0) ** 2 * 6371.0 ** 2 * math.cos(lat_rad)
 
 
+# Half-width of the pixel window used around each coordinate.
+# 5 pixels = ±500 m at 100 m resolution (±~1.5 km diagonal).
+# We take the maximum over the window so that a coordinate landing on a road,
+# park, or plaza inside a city still captures the surrounding urban density
+# rather than returning 0.
+WINDOW_HALF = 5
+
+
 def extract_densities_for_epoch(points_df: pd.DataFrame, epoch: int) -> pd.Series:
     """
     Extract population density (people/km²) for all points in points_df from
     the GHS-POP raster for the given epoch.  Opens the raster once and reads
-    each point with a windowed single-pixel read to avoid loading the full
-    global raster (~500 GB) into memory.
+    a small window around each coordinate, returning the maximum density within
+    that window.  This prevents single-pixel zeros caused by roads, parks, or
+    other unpopulated features inside urban areas.
 
     points_df must have columns: lat, lon (index is preserved).
     Returns a Series of pop_density values aligned to points_df.index.
@@ -132,6 +141,7 @@ def extract_densities_for_epoch(points_df: pd.DataFrame, epoch: int) -> pd.Serie
         return pd.Series(np.nan, index=points_df.index)
 
     results = pd.Series(np.nan, index=points_df.index)
+    side = 2 * WINDOW_HALF + 1  # total window side length in pixels
 
     try:
         with rasterio.open(tif) as src:
@@ -144,14 +154,22 @@ def extract_densities_for_epoch(points_df: pd.DataFrame, epoch: int) -> pd.Serie
                         "EPSG:4326", src.crs, [row["lon"]], [row["lat"]]
                     )
                     r, c = src.index(xs[0], ys[0])
-                    r = int(max(0, min(r, src.height - 1)))
-                    c = int(max(0, min(c, src.width  - 1)))
 
-                    # Read a single pixel via windowed read — avoids loading full raster
-                    count = float(src.read(1, window=Window(c, r, 1, 1))[0, 0])
+                    # Clamp window so it stays inside the raster bounds
+                    r0 = int(max(0, r - WINDOW_HALF))
+                    c0 = int(max(0, c - WINDOW_HALF))
+                    r1 = int(min(src.height, r0 + side))
+                    c1 = int(min(src.width,  c0 + side))
 
-                    if count < 0 or np.isnan(count):
+                    patch = src.read(1, window=Window(c0, r0, c1 - c0, r1 - r0))
+
+                    # Valid counts: non-negative, non-NaN
+                    valid = patch[(patch >= 0) & np.isfinite(patch)]
+                    if valid.size == 0:
                         continue
+
+                    # Maximum over the window — captures densest pixel nearby
+                    count = float(valid.max())
 
                     if not is_equal_area:
                         area_km2 = pixel_area_km2_from_raster(src, row["lat"])
