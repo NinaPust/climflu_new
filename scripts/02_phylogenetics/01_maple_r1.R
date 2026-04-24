@@ -1,27 +1,24 @@
-# scripts/02_phylogenetics/01_maple_tree.R
+# scripts/02_phylogenetics/01_maple_r1.R
 #
-# PURPOSE: Two-round MAPLE tree inference with outlier pruning between rounds.
+# PURPOSE: Infer an initial MAPLE tree and prune branch-length outliers.
+#          The pruned r1 tree feeds into 02_treetime_r1.R for clock-outlier
+#          detection, after which 03_maple_r2.R builds the canonical tree.
 #
-# Round 1:
-#   1. Converts the aligned FASTA → MAPLE format via createMapleFile.py
+#   1. Converts the aligned FASTA to MAPLE format via createMapleFile.py
 #   2. Runs MAPLEv0.6.8.py to infer the tree
-#   3. Prunes outlier tips (very short / very long branches)
-#
-# Round 2:
-#   4. Subsets the alignment to pruned accessions
-#   5. Re-runs MAPLE on the clean alignment
+#   3. Prunes outlier tips in two passes:
+#        pass 1 — fixed lower bound removes near-identical duplicates
+#        pass 2 — MAD-based upper bound removes long-branch outliers
 #
 # INPUT:
 #   data/alignments/{gene}_aligned.fasta
 #
 # OUTPUT:
-#   data/trees/raw/maple/{gene}_tree_r1.nwk      — raw MAPLE tree round 1
-#   data/trees/raw/maple/{gene}_tree_r2.nwk      — raw MAPLE tree round 2
-#   data/trees/pruned/{gene}_pruned.nwk          — pruned tree (Newick)
-#   data/trees/pruned/{gene}_accessions.txt      — accessions retained
-#   figures/trees/branch_hist_r1.pdf             — r1 raw branch length histograms
-#   figures/trees/branch_hist_r2.pdf             — r2 raw branch length histograms
-#   figures/trees/pruned_trees_r1.pdf            — pruned r1 tree plots
+#   data/trees/raw/maple/{gene}_tree_r1.nwk       — raw MAPLE tree
+#   data/trees/pruned/{gene}_pruned_r1.nwk        — pruned tree
+#   data/trees/pruned/{gene}_accessions_r1.txt    — accessions retained
+#   figures/trees/branch_hist_r1.pdf              — raw branch length histograms
+#   figures/trees/pruned_trees_r1.pdf             — pruned tree plots
 
 suppressPackageStartupMessages({
   library(here)
@@ -193,19 +190,20 @@ for (gene in names(raw_trees)) {
   # Round 1: remove very short branches (likely duplicates/identical sequences)
   tree <- prune_outliers(tree,
                          min_bl = PARAMS$prune_min_bl,
-                         max_bl = Inf,
+                         k_long = Inf,
                          round  = 1)
 
-  # Round 2: remove very long branches (likely sequencing errors/mis-assignments)
+  # Round 2: remove long-branch outliers via robust MAD detection
   tree <- prune_outliers(tree,
                          min_bl = 0,
-                         max_bl = PARAMS$prune_max_bl,
+                         k_long = PARAMS$prune_long_k,
                          round  = 2)
 
   message("  Pruned tree: ", Ntip(tree), " tips")
 
-  pruned_out <- file.path(PATHS$trees_pruned, paste0(gene, "_pruned.nwk"))
-  acc_out    <- file.path(PATHS$trees_pruned, paste0(gene, "_accessions.txt"))
+  pruned_out <- file.path(PATHS$trees_pruned, paste0(gene, "_pruned_r1.nwk"))
+  acc_out    <- file.path(PATHS$trees_pruned,
+                          paste0(gene, "_accessions_r1.txt"))
   write.tree(tree, pruned_out)
   writeLines(tree$tip.label, acc_out)
   message("  Pruned tree: ", pruned_out)
@@ -219,139 +217,5 @@ for (gene in names(raw_trees)) {
 dev.off()
 message("Pruned tree plots: ", pruned_pdf)
 
-# ── Round 2: re-run MAPLE on pruned alignment ─────────────────────────────────
-# Subset the r1 alignment to the accessions that survived pruning, then
-# re-infer the tree. This removes the long-stem artefact caused by outliers
-# distorting the root placement in r1.
-
-r2_trees <- list()
-
-for (gene in names(raw_trees)) {
-  message("\n[", gene, "] Round 2 MAPLE — pruned alignment...")
-
-  acc_path  <- file.path(PATHS$trees_pruned, paste0(gene, "_accessions.txt"))
-  tree_r2   <- file.path(PATHS$trees_maple,  paste0(gene, "_tree_r2.nwk"))
-
-  if (!file.exists(acc_path)) {
-    warning("Pruned accessions not found, skipping r2: ", acc_path)
-    next
-  }
-
-  if (file.exists(tree_r2)) {
-    message("  R2 tree already exists, skipping MAPLE: ", tree_r2)
-    r2_trees[[gene]] <- read.tree(tree_r2)
-    next
-  }
-
-  pruned_acc <- readLines(acc_path)
-
-  # Use pdm09 fasta as source for H1N1 genes if it exists
-  pdm09_fasta <- file.path(PATHS$trees_maple,
-                           paste0(gene, "_pdm09_r1.fasta"))
-  src_fasta   <- if (file.exists(pdm09_fasta)) {
-    pdm09_fasta
-  } else {
-    file.path(PATHS$alignments, paste0(gene, "_aligned.fasta"))
-  }
-
-  if (!file.exists(src_fasta)) {
-    warning("Source alignment not found, skipping r2: ", src_fasta)
-    next
-  }
-
-  seqs   <- read.FASTA(src_fasta)
-  keep   <- intersect(names(seqs), pruned_acc)
-  seqs   <- seqs[keep]
-  message("  Subsetting alignment: ", length(seqs), " sequences")
-
-  r2_fasta <- file.path(PATHS$trees_maple, paste0(gene, "_for_maple_r2.fasta"))
-  write.FASTA(seqs, r2_fasta)
-
-  # ── Convert to MAPLE format ────────────────────────────────────────────────
-  maple_input_name <- paste0(gene, "_maple_input_r2.txt")
-  message("  Converting to MAPLE format...")
-
-  ret <- system2("python3", args = c(
-    create_maple,
-    "--path",   paste0(PATHS$trees_maple, "/"),
-    "--fasta",  paste0(gene, "_for_maple_r2.fasta"),
-    "--output", maple_input_name,
-    "--overwrite"
-  ))
-  if (ret != 0) {
-    warning("createMapleFile.py failed for ", gene, " r2")
-    next
-  }
-  unlink(r2_fasta)
-
-  # ── Run MAPLE ─────────────────────────────────────────────────────────────
-  maple_input  <- file.path(PATHS$trees_maple, maple_input_name)
-  maple_output <- file.path(PATHS$trees_maple, paste0(gene, "_maple_r2"))
-  message("  Running MAPLE...")
-
-  ret <- system2("python3", args = c(
-    maple_script,
-    "--input",  maple_input,
-    "--output", maple_output,
-    "--overwrite"
-  ))
-  if (ret != 0) {
-    warning("MAPLE failed for ", gene, " r2")
-    next
-  }
-
-  maple_tree_file <- paste0(maple_output, "_tree.tree")
-  if (!file.exists(maple_tree_file)) {
-    warning("MAPLE r2 output tree not found: ", maple_tree_file)
-    next
-  }
-
-  tree <- read.tree(maple_tree_file)
-  message("  R2 raw tree: ", Ntip(tree), " tips")
-
-  write.tree(tree, tree_r2)
-  message("  Written: ", tree_r2)
-
-  # ── Plot r2 raw tree ───────────────────────────────────────────────────────
-  fig_dir  <- here("figures", "trees")
-  pdf_path <- file.path(fig_dir, paste0(gene, "_raw_r2.pdf"))
-  pdf(pdf_path, width = 10, height = 10)
-  plot(tree, show.tip.label = FALSE, no.margin = TRUE,
-       edge.width = 0.3, type = "phylogram",
-       main = paste0(gene, " — raw MAPLE tree r2 (", Ntip(tree), " tips)"))
-  add.scale.bar(cex = 0.7)
-  dev.off()
-  message("  Plot: ", pdf_path)
-
-  r2_trees[[gene]] <- tree
-
-  # Clean up intermediates
-  unlink(maple_input)
-  maple_temps <- list.files(
-    PATHS$trees_maple,
-    pattern = paste0("^", gene, "_maple_r2"),
-    full.names = TRUE
-  )
-  unlink(maple_temps)
-}
-
-# ── Branch length histograms (r2 raw trees) ───────────────────────────────────
-if (length(r2_trees) > 0) {
-  fig_dir  <- here("figures", "trees")
-  hist_pdf <- file.path(fig_dir, "branch_hist_r2.pdf")
-
-  pdf(hist_pdf, width = 8, height = 5)
-  for (gene in names(r2_trees)) {
-    bl <- r2_trees[[gene]]$edge.length
-    p <- ggplot(data.frame(bl = bl), aes(x = bl)) +
-      geom_histogram(bins = 60, fill = "steelblue", colour = "white") +
-      labs(title = paste0(gene, " — r2 raw branch lengths"),
-           x = "Branch length", y = "Count") +
-      theme_bw()
-    print(p)
-  }
-  dev.off()
-  message("R2 branch length histograms: ", hist_pdf)
-}
 
 message("\nDone.")

@@ -54,9 +54,9 @@ PARAMS <- list(
   date_from = "2009-01-01",
   date_to   = "2023-12-31",
 
-  # MAPLE tree pruning thresholds (branch length)
-  prune_min_bl = 0.0,    # Remove branches shorter than this (round 1)
-  prune_max_bl = 0.028,  # Remove branches longer than this (round 2)
+  # MAPLE tree pruning
+  prune_min_bl = 0.0, # Fixed lower cutoff: removes near-identical duplicates
+  prune_long_k = 4,   # MAD multiplier for long-branch outlier detection
 
   # MACSE batch size (number of accessions per lettered subset)
   macse_batch_size = 50,

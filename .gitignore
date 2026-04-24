@@ -39,3 +39,7 @@ figures/metadata_diagnostics/
 .DS_Store
 CLAUDE.md
 scripts/00_metadata/00z_explore_metadata.R
+
+# Archived intermediate tree builds
+data/trees/archive/
+figures/trees/archive/

@@ -1,14 +1,15 @@
-# scripts/02_phylogenetics/04_treetime.R
+# scripts/02_phylogenetics/06_treetime.R
 #
-# PURPOSE: Date the pruned MAPLE tree using TreeTime with a relaxed clock.
+# PURPOSE: Date the canonical (r2) pruned MAPLE tree using TreeTime.
+#          This is the timetree used for all downstream analysis.
 #
 # INPUT:
-#   data/trees/pruned/{gene}_pruned.nwk
+#   data/trees/pruned/{gene}_pruned.nwk          — canonical r2 pruned tree
 #   data/alignments/{gene}_aligned.fasta
-#   data/metadata/{gene}_metadata.csv  — accession + collection_date columns
+#   data/metadata/{gene}_metadata.csv
 #
 # OUTPUT:
-#   data/trees/timed/{gene}_timetree.nwk  — time-calibrated tree (Newick)
+#   data/trees/timed/{gene}_timetree.nwk         — time-calibrated tree
 #
 # REQUIRES: TOOLS$treetime in config.R
 #           (treetime_env: /home/nina/miniforge3/envs/treetime_env/bin/treetime)

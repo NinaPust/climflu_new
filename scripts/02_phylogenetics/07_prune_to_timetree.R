@@ -1,4 +1,4 @@
-# scripts/02_phylogenetics/05_prune_to_timetree.R
+# scripts/02_phylogenetics/07_prune_to_timetree.R
 #
 # PURPOSE: Prune the already-pruned MAPLE trees to retain only tips that
 #          survived TreeTime dating (i.e. are present in the timetree).
