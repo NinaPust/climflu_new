@@ -42,46 +42,50 @@ read_paml_matrix <- function(path) {
 #' @param expected_labels  Character vector of all expected taxon labels.
 #' @return A symmetric named numeric matrix covering expected_labels.
 matrix_stitch <- function(matrices, expected_labels) {
-  n      <- length(expected_labels)
-  full   <- matrix(NA_real_, nrow = n, ncol = n,
-                   dimnames = list(expected_labels, expected_labels))
-  counts <- matrix(0L,       nrow = n, ncol = n,
-                   dimnames = list(expected_labels, expected_labels))
+  n         <- length(expected_labels)
+  label_idx <- setNames(seq_len(n), expected_labels)
 
-  for (mat in matrices) {
-    if (is.null(mat)) next
-    shared <- intersect(rownames(mat), expected_labels)
-    if (length(shared) < 2) next
-    sub <- mat[shared, shared, drop = FALSE]
-    full[shared, shared]   <- rowSums(cbind(
-      ifelse(is.na(full[shared, shared]), 0, full[shared, shared]),
-      sub
-    ), na.rm = FALSE)  # manual accumulation below
-    counts[shared, shared] <- counts[shared, shared] + 1L
-  }
-
-  # Proper average accumulation
   full <- matrix(NA_real_, nrow = n, ncol = n,
                  dimnames = list(expected_labels, expected_labels))
-  count <- matrix(0L, nrow = n, ncol = n,
-                  dimnames = list(expected_labels, expected_labels))
 
   for (mat in matrices) {
     if (is.null(mat)) next
     shared <- intersect(rownames(mat), expected_labels)
     if (length(shared) < 2) next
-    sub <- mat[shared, shared, drop = FALSE]
-    cur <- full[shared, shared]
-    cur[is.na(cur)] <- 0
-    full[shared, shared]  <- cur + sub
-    count[shared, shared] <- count[shared, shared] + 1L
+    idx        <- label_idx[shared]
+    full[idx, idx] <- mat[shared, shared, drop = FALSE]
   }
-
-  # Average where we have values
-  full <- full / ifelse(count == 0L, NA_real_, count)
 
   diag(full) <- 0
   full
+}
+
+
+#' Remap short aliases in a PAML matrix back to full accession names.
+#'
+#' codeml truncates PHYLIP sequence names to 10 characters, causing collisions
+#' for long accession IDs (e.g. EPI_ISL_*). This function reads the matrix and
+#' replaces alias names with originals using the companion seq_map.csv.
+#'
+#' @param path     Path to PAML matrix file (2ML.dN or 2ML.dS).
+#' @param name_map Named character vector: names = aliases, values = full IDs.
+#' @return A named numeric matrix with full accession IDs as row/col names.
+remap_paml_matrix <- function(path, name_map) {
+  mat <- read_paml_matrix(path)
+  aliases <- rownames(mat)
+  mapped  <- name_map[aliases]
+
+  missing <- aliases[is.na(mapped)]
+  if (length(missing) > 0) {
+    warning("remap_paml_matrix: ", length(missing),
+            " aliases not found in name_map; keeping originals. First few: ",
+            paste(head(missing, 5), collapse = ", "))
+    mapped[is.na(mapped)] <- missing
+  }
+
+  rownames(mat) <- mapped
+  colnames(mat) <- mapped
+  mat
 }
 
 

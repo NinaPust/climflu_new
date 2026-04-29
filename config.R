@@ -27,6 +27,7 @@ PATHS <- list(
   test_climate      = here("data", "test", "climate"),
   test_rates        = here("data", "test", "rates"),
   codeml     = here("data", "codeml"),
+  yn00       = here("data", "yn00"),
   rates      = here("data", "rates"),
   scripts    = here("scripts"),
   R          = here("R")
@@ -38,7 +39,8 @@ TOOLS <- list(
   mafft    = Sys.which("mafft"),       # or full path, e.g. "/usr/local/bin/mafft"
   macse    = "/path/to/macse_v2.07.jar",
   maple    = "/home/nina/influenza_env/programs/maple",
-  codeml   = Sys.which("codeml"),
+  codeml   = "/home/nina/paml4.8/bin/codeml",
+  yn00     = "/home/nina/paml4.8/bin/yn00",
   treetime = "/home/nina/miniforge3/envs/treetime_env/bin/treetime"
 )
 
@@ -65,7 +67,10 @@ PARAMS <- list(
   trim_gap_threshold = 0.5,
 
   # PAML codeml model (0 = one ratio, 1 = free ratios)
-  codeml_model = 0,
+  codeml_model      = 0,
+  codeml_batch_size = 100,  # sequences per batch; ~80 batches for 8k seqs → ~3,240 pairs
+  codeml_cores      = 16,   # parallel jobs; ~25% of 64-core server (polite default)
+  codeml_nice       = 10,   # nice priority for codeml processes (0=normal, 19=lowest)
 
   # phylolm: Pagel's lambda method
   phylolm_method = "lambda",

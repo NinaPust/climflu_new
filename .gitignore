@@ -5,6 +5,7 @@ data/climate/
 data/alignments/
 data/trees/
 data/codeml/
+data/yn00/
 data/rates/
 data/test/
 data/population/ 
@@ -23,6 +24,9 @@ __pycache__/
 .env
 venv/
 
+# Logs
+logs/
+
 # PAML temp files
 *.ctl
 rst
@@ -34,11 +38,11 @@ lnf
 # Exploratory / diagnostic scripts (not part of reproducible pipeline)
 scripts/00_metadata/00z_*.R
 figures/metadata_diagnostics/
+scripts/02_phylogenetics/04z_test_*.R
 
 # OS
 .DS_Store
 CLAUDE.md
-scripts/00_metadata/00z_explore_metadata.R
 
 # Archived intermediate tree builds
 data/trees/archive/
