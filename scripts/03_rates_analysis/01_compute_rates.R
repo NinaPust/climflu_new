@@ -14,9 +14,11 @@
 # OUTPUT:
 #   data/rates/{gene}_rates.csv  — one row per tip, columns:
 #     accession, rate (subst/site/yr), dN, dS, omega (dN/dS),
+#     dN_rate, dS_rate, branch_omega  (per-branch rates from fastme trees),
 #     era5_temp_mean, humidity_rh,
 #     year, month, latitude, longitude, country, region, host,
-#     log_rate, log_omega, scaled_temp, scaled_humidity, scaled_pop_density
+#     log_rate, log_omega, log_dN_rate, log_dS_rate, log_branch_omega,
+#     scaled_temp, scaled_humidity, scaled_pop_density
 #
 # FLAGS:
 #   --gene X   run a single gene segment
@@ -88,6 +90,24 @@ for (gene in genes) {
     message("  dNdS matrix not found — dN/dS columns will be NA")
   }
 
+  # Terminal branch dN/dS rates from fastme.bal trees (GENES only, not PA)
+  fastme_dir  <- file.path(PATHS$trees, "fastmebal")
+  dn_tree_path <- file.path(fastme_dir, paste0(gene, "_dN_tree.nwk"))
+  ds_tree_path <- file.path(fastme_dir, paste0(gene, "_dS_tree.nwk"))
+  has_fastme <- file.exists(dn_tree_path) && file.exists(ds_tree_path)
+  if (has_fastme) {
+    dn_tree <- read.tree(dn_tree_path)
+    ds_tree <- read.tree(ds_tree_path)
+    tip_idx_dn <- match(seq_len(Ntip(dn_tree)), dn_tree$edge[, 2])
+    tip_idx_ds <- match(seq_len(Ntip(ds_tree)), ds_tree$edge[, 2])
+    dn_bl <- setNames(dn_tree$edge.length[tip_idx_dn], dn_tree$tip.label)
+    ds_bl <- setNames(ds_tree$edge.length[tip_idx_ds], ds_tree$tip.label)
+    dn_bl[dn_bl < 0] <- 0
+    ds_bl[ds_bl < 0] <- 0
+  } else {
+    message("  fastme dN/dS trees not found — branch rate columns will be NA")
+  }
+
   # ── Terminal branch rate (subst/site/yr) ──────────────────────────────────
   # divergence_tree.nexus: branch lengths in substitutions/site
   # timetree.nwk:          branch lengths in years (strict clock)
@@ -124,13 +144,35 @@ for (gene in genes) {
     omega_mean <- rep(NA_real_, length(common_acc))
   }
 
+  # ── Per-branch dN/dS rates (terminal branch dN or dS / time) ─────────────
+  if (has_fastme) {
+    branch_common <- intersect(common_acc, intersect(names(dn_bl), names(time_bl)))
+    dN_rate    <- rep(NA_real_, length(common_acc))
+    dS_rate    <- rep(NA_real_, length(common_acc))
+    branch_omega <- rep(NA_real_, length(common_acc))
+    names(dN_rate) <- names(dS_rate) <- names(branch_omega) <- common_acc
+    t_bl <- time_bl[branch_common]
+    valid <- t_bl > 0
+    dN_rate[branch_common[valid]]    <- dn_bl[branch_common[valid]] / t_bl[valid]
+    dS_rate[branch_common[valid]]    <- ds_bl[branch_common[valid]] / t_bl[valid]
+    branch_omega[branch_common[valid]] <-
+      dn_bl[branch_common[valid]] / pmax(ds_bl[branch_common[valid]], 1e-10)
+  } else {
+    dN_rate      <- rep(NA_real_, length(common_acc))
+    dS_rate      <- rep(NA_real_, length(common_acc))
+    branch_omega <- rep(NA_real_, length(common_acc))
+  }
+
   # ── Assemble data frame ───────────────────────────────────────────────────
   df <- tibble(
-    accession = common_acc,
-    rate      = rate[common_acc],
-    dN        = dN_mean,
-    dS        = dS_mean,
-    omega     = omega_mean
+    accession    = common_acc,
+    rate         = rate[common_acc],
+    dN           = dN_mean,
+    dS           = dS_mean,
+    omega        = omega_mean,
+    dN_rate      = dN_rate,
+    dS_rate      = dS_rate,
+    branch_omega = branch_omega
   )
 
   pop_path <- file.path(paths_pop, paste0(gene, "_popdens.csv"))
@@ -144,13 +186,21 @@ for (gene in genes) {
 
   df <- df |>
     left_join(climate |> select(accession, era5_temp_mean,
-                                era5_dewpoint, humidity_rh),
+                                era5_dewpoint, humidity_rh,
+                                any_of(c("delta_temp", "delta_humidity"))),
               by = "accession") |>
     left_join(meta |> select(accession, year, month, latitude, longitude,
                              country, region, host),
               by = "accession")
 
   if (has_pop) df <- left_join(df, pop, by = "accession")
+
+  # ── Sampling density: sequences per (lat, lon, year, month) ──────────────
+  samp_counts <- df |>
+    filter(!is.na(latitude), !is.na(longitude), !is.na(year), !is.na(month)) |>
+    count(latitude, longitude, year, month, name = "sampling_density")
+  df <- left_join(df, samp_counts,
+                  by = c("latitude", "longitude", "year", "month"))
 
   # ── Scale and transform predictors ───────────────────────────────────────
   df <- scale_env_vars(df)

@@ -34,10 +34,13 @@ res <- lapply(ALL_GENES, function(g) {
 
 # ── Prepare plotting data ─────────────────────────────────────────────────────
 PREDICTOR_LABELS <- c(
-  scaled_temp        = "Temperature",
-  scaled_humidity    = "Relative humidity",
-  scaled_pop_density = "Population density",
-  scaled_season      = "Season"
+  scaled_temp             = "Temperature",
+  scaled_humidity         = "Relative humidity",
+  scaled_delta_temp       = "ΔTemperature",
+  scaled_delta_humidity   = "ΔRelative humidity",
+  scaled_sampling_density = "Sampling density",
+  scaled_pop_density      = "Population density"
+  # scaled_season         = "Season"
 )
 
 PRED_COLOURS <- setNames(
@@ -109,3 +112,72 @@ p <- ggplot(plot_df,
 out_path <- file.path(out_dir, "phylolm_forest.png")
 ggsave(out_path, p, width = 9, height = 6, dpi = 180)
 message("Saved: ", out_path)
+
+# ── FDR-corrected forest plot ─────────────────────────────────────────────────
+fdr_path <- file.path(PATHS$rates, "all_phylolm_results.csv")
+if (file.exists(fdr_path)) {
+  res_fdr <- read_csv(fdr_path, show_col_types = FALSE)
+
+  plot_df_fdr <- res_fdr |>
+    filter(term %in% names(PREDICTOR_LABELS), response == "log_rate") |>
+    mutate(
+      ci_lo       = estimate - 1.96 * std_error,
+      ci_hi       = estimate + 1.96 * std_error,
+      significant = !is.na(p.fdr) & p.fdr < 0.05,
+      predictor   = factor(PREDICTOR_LABELS[term], levels = PREDICTOR_LABELS),
+      protein     = factor(
+        case_when(
+          gene %in% c("H1", "H3")            ~ "HA",
+          gene %in% c("N1", "N2")            ~ "NA",
+          gene %in% c("PA_H1N1", "PA_H3N2") ~ "PA"
+        ),
+        levels = c("HA", "NA", "PA")
+      ),
+      subtype    = ifelse(gene %in% c("H1", "N1", "PA_H1N1"), "H1N1", "H3N2"),
+      point_fill = ifelse(significant, PRED_COLOURS[as.character(predictor)], "white")
+    )
+
+  p_fdr <- ggplot(plot_df_fdr,
+                  aes(x = estimate, y = protein,
+                      colour = predictor, group = predictor)) +
+
+    geom_vline(xintercept = 0, linetype = "dashed",
+               colour = "grey50", linewidth = 0.4) +
+
+    geom_hline(yintercept = 1.5, linetype = "dotted",
+               colour = "grey70", linewidth = 0.4) +
+
+    geom_linerange(aes(xmin = ci_lo, xmax = ci_hi),
+                   linewidth = 0.7, position = dodge) +
+
+    geom_point(aes(fill = point_fill),
+               shape = 21, size = 3, stroke = 0.8,
+               position = dodge) +
+
+    scale_colour_manual(values = PRED_COLOURS, name = NULL) +
+    scale_fill_identity() +
+    scale_y_discrete(limits = rev) +
+
+    facet_wrap(~subtype, nrow = 1) +
+
+    labs(
+      title    = "Phylogenetic regression: predictors of log terminal branch rate",
+      subtitle = "Coefficients ± 95% CI  |  PA = negative control  |  Filled = BH-FDR p < 0.05",
+      x        = "Coefficient estimate",
+      y        = NULL
+    ) +
+
+    theme_bw(base_size = 12) +
+    theme(
+      strip.text         = element_text(face = "bold", size = 13),
+      legend.position    = "bottom",
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.x = element_blank()
+    )
+
+  out_path_fdr <- file.path(out_dir, "phylolm_forest_fdr.png")
+  ggsave(out_path_fdr, p_fdr, width = 9, height = 6, dpi = 180)
+  message("Saved: ", out_path_fdr)
+} else {
+  message("FDR results not found, skipping FDR plot: ", fdr_path)
+}

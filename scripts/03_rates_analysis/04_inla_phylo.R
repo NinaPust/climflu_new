@@ -57,8 +57,8 @@ source(here("R", "climate_utils.R"))
 
 # ── Settings ───────────────────────────────────────────────────────────────────
 # Number of tips to subsample per gene. Increase for more power (slower);
-# decrease if memory is tight. 1000 → ~8 MB VCV matrix.
-N_SUB <- 1000
+# decrease if memory is tight. 2000 → ~64 MB VCV matrix.
+N_SUB <- 2000
 
 ALL_GENES <- c(GENES, "PA_H1N1", "PA_H3N2")
 args      <- commandArgs(trailingOnly = TRUE)
@@ -75,7 +75,9 @@ paths_timed <- if (use_test) PATHS$test_trees_timed else PATHS$trees_timed
 paths_rates <- if (use_test) PATHS$test_rates       else PATHS$rates
 
 PREDICTOR_TERMS <- c("scaled_temp", "scaled_humidity",
-                     "scaled_pop_density", "scaled_season")
+                     "scaled_delta_temp", "scaled_delta_humidity",
+                     "scaled_sampling_density", "scaled_pop_density")
+                     # "scaled_season"
 
 # ── Helper: extract INLA posterior summary for one term ───────────────────────
 posterior_summary <- function(fit, term) {
@@ -152,8 +154,11 @@ for (gene in genes) {
   tree <- keep.tip(tree, df$accession)
 
   predictors <- c("scaled_temp", "scaled_humidity",
-                  if (has_pop) "scaled_pop_density",
-                  if ("scaled_season" %in% names(df)) "scaled_season")
+                  if ("scaled_delta_temp"       %in% names(df)) "scaled_delta_temp",
+                  if ("scaled_delta_humidity"   %in% names(df)) "scaled_delta_humidity",
+                  if ("scaled_sampling_density" %in% names(df)) "scaled_sampling_density",
+                  if (has_pop) "scaled_pop_density")
+                  # if ("scaled_season" %in% names(df)) "scaled_season"
 
   message("  ", nrow(df), " taxa available; subsampling to ",
           min(N_SUB, nrow(df)))
@@ -185,9 +190,13 @@ for (gene in genes) {
     if (!response %in% names(sub_df) ||
         all(is.na(sub_df[[response]]))) next
 
+    # Year factor controls for secular trends; excluded from all_terms so
+    # year dummies do not appear in the results table.
+    year_term <- if ("year" %in% names(sub_df)) "as.factor(year)" else NULL
+
     formula_inla <- as.formula(paste(
       response, "~",
-      paste(predictors, collapse = " + "),
+      paste(c(predictors, year_term), collapse = " + "),
       # Phylogenetic random effect — covariance proportional to VCV
       "+ f(tip_id_phylo, model = 'generic0', Cmatrix = P,",
       "    hyper = list(prec = list(prior = 'pc.prec',",

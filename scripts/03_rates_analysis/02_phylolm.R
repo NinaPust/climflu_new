@@ -98,8 +98,11 @@ for (gene in genes) {
   }
 
   predictors <- c("scaled_temp", "scaled_humidity",
-                  if (has_pop) "scaled_pop_density",
-                  if ("scaled_season" %in% names(df)) "scaled_season")
+                  if ("scaled_delta_temp"       %in% names(df)) "scaled_delta_temp",
+                  if ("scaled_delta_humidity"   %in% names(df)) "scaled_delta_humidity",
+                  if ("scaled_sampling_density" %in% names(df)) "scaled_sampling_density",
+                  if (has_pop) "scaled_pop_density")
+                  # if ("scaled_season" %in% names(df)) "scaled_season"
 
   message("  ", nrow(df), " taxa in analysis")
 
@@ -131,8 +134,12 @@ for (gene in genes) {
     for (response in c("log_rate", "log_omega")) {
       if (!response %in% names(sub_df) || all(is.na(sub_df[[response]]))) next
 
+      # Year factor controls for secular trends (not included in predictors so
+      # it is excluded from FDR correction and forest plots).
+      year_term <- if ("year" %in% names(sub_df)) "as.factor(year)" else NULL
       formula_full <- as.formula(
-        paste(response, "~", paste(predictors, collapse = " + "))
+        paste(response, "~",
+              paste(c(predictors, year_term), collapse = " + "))
       )
 
       result <- run_phylolm(
@@ -161,7 +168,9 @@ for (gene in genes) {
 message("\nApplying BH-FDR correction across all tests...")
 
 PREDICTOR_TERMS <- c("scaled_temp", "scaled_humidity",
-                     "scaled_pop_density", "scaled_season")
+                     "scaled_delta_temp", "scaled_delta_humidity",
+                     "scaled_sampling_density", "scaled_pop_density")
+                     # "scaled_season"
 
 all_res <- lapply(genes, function(g) {
   path <- file.path(paths_rates, paste0(g, "_phylolm_results.csv"))
