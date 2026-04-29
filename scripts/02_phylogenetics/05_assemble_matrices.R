@@ -1,26 +1,21 @@
-# scripts/02_phylogenetics/03_assemble_matrices.R
+# scripts/02_phylogenetics/05_assemble_matrices.R
 #
-# PURPOSE: Stitch pairwise dN/dS matrices from codeml into full distance
-#          matrices, validate dimensions, and build dN and dS trees.
+# PURPOSE: Stitch pairwise dN/dS matrices from yn00 into full distance
+#          matrices and save assembled dN, dS, omega matrices.
 #
 # INPUT:
-#   data/codeml/{gene}/  — directories of codeml output
-#   data/metadata/{gene}_accessions_final.txt
+#   data/yn00/{gene}/  — directories of yn00 output
+#   data/trees/pruned/{gene}_accessions.txt
 #
 # OUTPUT:
-#   data/trees/{gene}_dN_tree.nwk
-#   data/trees/{gene}_dS_tree.nwk
 #   data/rates/{gene}_dNdS_matrix.rds   — full assembled matrices (dN, dS, omega)
 
 suppressPackageStartupMessages({
   library(here)
-  library(ape)
-  library(phangorn)
 })
 
 source(here("config.R"))
 source(here("R", "matrix_utils.R"))
-source(here("R", "tree_utils.R"))
 
 args  <- commandArgs(trailingOnly = TRUE)
 genes <- if ("--gene" %in% args) args[which(args == "--gene") + 1] else GENES
@@ -28,25 +23,39 @@ genes <- if ("--gene" %in% args) args[which(args == "--gene") + 1] else GENES
 for (gene in genes) {
   message("\n[", gene, "] Assembling dN/dS matrices...")
 
-  codeml_root <- file.path(PATHS$codeml, gene)
-  acc_file    <- file.path(PATHS$metadata, paste0(gene, "_accessions_final.txt"))
+  yn00_root <- file.path(PATHS$yn00, gene)
+  acc_file  <- file.path(PATHS$metadata, paste0(gene, "_accessions_final.txt"))
 
-  if (!dir.exists(codeml_root)) {
-    warning("codeml directory not found, skipping: ", codeml_root)
+  if (!dir.exists(yn00_root)) {
+    warning("yn00 directory not found, skipping: ", yn00_root)
     next
   }
 
+  # Accession list: prefer post-pruning list from trees/pruned, fallback to metadata
+  pruned_acc <- file.path(PATHS$trees_pruned, paste0(gene, "_accessions.txt"))
+  acc_file   <- if (file.exists(pruned_acc)) pruned_acc else acc_file
   accessions <- readLines(acc_file)
+  accessions <- accessions[nchar(trimws(accessions)) > 0]
   n <- length(accessions)
-  message("  ", n, " accessions")
+  message("  ", n, " accessions (from ", basename(acc_file), ")")
 
   # ── Collect pairwise matrices ─────────────────────────────────────────────
-  pair_dirs <- list.dirs(codeml_root, full.names = TRUE, recursive = FALSE)
-  pair_dirs <- pair_dirs[file.exists(file.path(pair_dirs, "2ML.dS"))]
+  pair_dirs <- list.dirs(yn00_root, full.names = TRUE, recursive = FALSE)
+  pair_dirs <- pair_dirs[file.exists(file.path(pair_dirs, "2YN.dS"))]
   message("  ", length(pair_dirs), " completed codeml pairs found")
 
-  dN_matrices <- lapply(pair_dirs, function(d) read_paml_matrix(file.path(d, "2ML.dN")))
-  dS_matrices <- lapply(pair_dirs, function(d) read_paml_matrix(file.path(d, "2ML.dS")))
+  # Prefer remapped RDS (full accession names); fall back to raw PAML matrices
+  load_dn <- function(d) {
+    rds <- file.path(d, "dN_remapped.rds")
+    if (file.exists(rds)) readRDS(rds) else read_paml_matrix(file.path(d, "2YN.dN"))
+  }
+  load_ds <- function(d) {
+    rds <- file.path(d, "dS_remapped.rds")
+    if (file.exists(rds)) readRDS(rds) else read_paml_matrix(file.path(d, "2YN.dS"))
+  }
+
+  dN_matrices <- lapply(pair_dirs, load_dn)
+  dS_matrices <- lapply(pair_dirs, load_ds)
 
   # ── Stitch into full matrices ─────────────────────────────────────────────
   dN_full <- matrix_stitch(dN_matrices, expected_labels = accessions)
@@ -68,22 +77,13 @@ for (gene in genes) {
   validate_matrix(dN_full, expected_n = length(common))
   validate_matrix(dS_full, expected_n = length(common))
 
-  # ── Build distance trees ──────────────────────────────────────────────────
-  dN_tree <- nnls.tree(as.dist(dN_full), read.tree(file.path(PATHS$trees, paste0(gene, "_tree.nwk"))))
-  dS_tree <- nnls.tree(as.dist(dS_full), read.tree(file.path(PATHS$trees, paste0(gene, "_tree.nwk"))))
-
   # ── Save outputs ──────────────────────────────────────────────────────────
-  write.tree(dN_tree, file.path(PATHS$trees, paste0(gene, "_dN_tree.nwk")))
-  write.tree(dS_tree, file.path(PATHS$trees, paste0(gene, "_dS_tree.nwk")))
-
   saveRDS(
     list(dN = dN_full, dS = dS_full, omega = dN_full / dS_full, accessions = common),
     file.path(PATHS$rates, paste0(gene, "_dNdS_matrix.rds"))
   )
 
-  message("  dN tree:  ", file.path(PATHS$trees, paste0(gene, "_dN_tree.nwk")))
-  message("  dS tree:  ", file.path(PATHS$trees, paste0(gene, "_dS_tree.nwk")))
-  message("  Matrices: ", file.path(PATHS$rates,  paste0(gene, "_dNdS_matrix.rds")))
+  message("  Matrices: ", file.path(PATHS$rates, paste0(gene, "_dNdS_matrix.rds")))
 }
 
 message("\nDone.")
