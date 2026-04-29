@@ -59,6 +59,13 @@ CLIMATE_COLS = [
     "humidity_rh",
 ]
 
+# Columns stored for the previous month (same structure, different prefix)
+PREV_CLIMATE_COLS = [
+    "era5_temp_prev",
+    "era5_dewpoint_prev",
+    "humidity_rh_prev",
+]
+
 
 def relative_humidity(temp_c: float, dewpoint_c: float) -> float:
     """
@@ -189,6 +196,13 @@ def extract_points_from_nc(nc_file: Path, points_df: pd.DataFrame) -> pd.DataFra
 
 # ── Cache management ──────────────────────────────────────────────────────────
 
+def prev_year_month(year: int, month: int) -> tuple[int, int]:
+    """Return (year, month) for the calendar month before the given one."""
+    if month == 1:
+        return year - 1, 12
+    return year, month - 1
+
+
 def load_cache() -> pd.DataFrame:
     if CACHE_PATH.exists():
         cache = pd.read_csv(CACHE_PATH)
@@ -223,7 +237,7 @@ def process_genes(genes: list[str]):
               "01_geocode.R first.", file=sys.stderr)
         return
 
-    # Collect all (lat, lon, year, month) combos across genes
+    # Collect all (lat, lon, year, month) combos across genes, plus previous months
     all_rows = pd.concat(gene_dfs.values(), ignore_index=True)
     all_rows = all_rows.dropna(subset=["latitude", "longitude", "year", "month"])
 
@@ -235,13 +249,25 @@ def process_genes(genes: list[str]):
     unique_keys["year"] = unique_keys["year"].astype(int)
     unique_keys["month"] = unique_keys["month"].astype(int)
 
-    print(f"\nTotal unique (lat, lon, year, month) combinations: "
-          f"{len(unique_keys)}")
+    # Expand to also include each location's previous calendar month
+    prev_keys = unique_keys.copy()
+    prev_ym = [prev_year_month(r.year, r.month)
+               for r in prev_keys.itertuples(index=False)]
+    prev_keys["year"]  = [ym[0] for ym in prev_ym]
+    prev_keys["month"] = [ym[1] for ym in prev_ym]
+
+    all_unique_keys = (
+        pd.concat([unique_keys, prev_keys], ignore_index=True)
+        .drop_duplicates()
+    )
+
+    print(f"\nTotal unique (lat, lon, year, month) combinations "
+          f"(current + previous months): {len(all_unique_keys)}")
 
     # Load cache and find uncached keys
     cache = load_cache()
     if not cache.empty:
-        merged = unique_keys.merge(
+        merged = all_unique_keys.merge(
             cache[["lat", "lon", "year", "month"]],
             on=["lat", "lon", "year", "month"],
             how="left",
@@ -251,7 +277,7 @@ def process_genes(genes: list[str]):
             columns="_merge"
         )
     else:
-        to_fetch = unique_keys
+        to_fetch = all_unique_keys
 
     print(f"  Already cached: {len(unique_keys) - len(to_fetch)}")
     print(f"  To fetch: {len(to_fetch)}")
@@ -305,6 +331,7 @@ def process_genes(genes: list[str]):
     for gene, df in gene_dfs.items():
         out_path = CLIMATE_DIR / f"{gene}_climate.csv"
 
+        # Current-month climate
         out_df = df.merge(
             cache,
             left_on=["latitude", "longitude", "year", "month"],
@@ -312,11 +339,42 @@ def process_genes(genes: list[str]):
             how="left",
         ).drop(columns=["lat", "lon"], errors="ignore")
 
+        # Compute previous (year, month) for each row
+        prev_ym = [prev_year_month(int(r.year), int(r.month))
+                   for r in out_df[["year", "month"]].itertuples(index=False)]
+        out_df["_prev_year"]  = [ym[0] for ym in prev_ym]
+        out_df["_prev_month"] = [ym[1] for ym in prev_ym]
+
+        # Previous-month climate
+        prev_cache = cache.rename(columns={
+            "year":          "_prev_year",
+            "month":         "_prev_month",
+            "era5_temp_mean": "era5_temp_prev",
+            "era5_dewpoint":  "era5_dewpoint_prev",
+            "humidity_rh":    "humidity_rh_prev",
+        })
+
+        out_df = out_df.merge(
+            prev_cache[["lat", "lon", "_prev_year", "_prev_month",
+                         "era5_temp_prev", "era5_dewpoint_prev", "humidity_rh_prev"]],
+            left_on=["latitude", "longitude", "_prev_year", "_prev_month"],
+            right_on=["lat", "lon", "_prev_year", "_prev_month"],
+            how="left",
+        ).drop(columns=["lat", "lon", "_prev_year", "_prev_month"], errors="ignore")
+
+        # Differences: current minus previous month
+        out_df["delta_temp"]     = np.round(
+            out_df["era5_temp_mean"] - out_df["era5_temp_prev"], 3)
+        out_df["delta_humidity"] = np.round(
+            out_df["humidity_rh"] - out_df["humidity_rh_prev"], 3)
+
         n_before = len(out_df)
         out_df = out_df.dropna(subset=["era5_temp_mean"])
         out_df.to_csv(out_path, index=False)
+        n_no_prev = out_df["era5_temp_prev"].isna().sum()
         print(f"  [{gene}] {len(out_df)}/{n_before} rows kept "
-              f"(dropped {n_before - len(out_df)} with NA climate) "
+              f"(dropped {n_before - len(out_df)} with NA climate); "
+              f"{n_no_prev} rows with NA previous-month climate "
               f"→ {out_path.name}")
 
 
