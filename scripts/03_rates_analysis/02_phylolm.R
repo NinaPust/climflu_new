@@ -45,15 +45,16 @@ if (use_test) message("*** Running in TEST mode (subsampled data) ***")
 
 paths_timed <- if (use_test) PATHS$test_trees_timed else PATHS$trees_timed
 paths_rates <- if (use_test) PATHS$test_rates       else PATHS$rates
+paths_out   <- if (use_test) PATHS$test_rates       else PATHS$rates_phylolm
 
-dir.create(paths_rates, recursive = TRUE, showWarnings = FALSE)
+dir.create(paths_out, recursive = TRUE, showWarnings = FALSE)
 
 for (gene in genes) {
   message("\n[", gene, "] phylolm analysis...")
 
   rates_path <- file.path(paths_rates, paste0(gene, "_rates.csv"))
   tree_path  <- file.path(paths_timed, paste0(gene, "_timetree.nwk"))
-  out_path   <- file.path(paths_rates, paste0(gene, "_phylolm_results.csv"))
+  out_path   <- file.path(paths_out, paste0(gene, "_phylolm_results.csv"))
 
   if (!file.exists(rates_path)) {
     warning("Rates file not found: ", rates_path)
@@ -173,7 +174,7 @@ PREDICTOR_TERMS <- c("scaled_temp", "scaled_humidity",
                      # "scaled_season"
 
 all_res <- lapply(genes, function(g) {
-  path <- file.path(paths_rates, paste0(g, "_phylolm_results.csv"))
+  path <- file.path(paths_out, paste0(g, "_phylolm_results.csv"))
   if (!file.exists(path)) return(NULL)
   read_csv(path, show_col_types = FALSE)
 }) |> bind_rows()
@@ -184,7 +185,7 @@ all_res$p.fdr[predictor_rows] <- p.adjust(
   all_res$p.value[predictor_rows], method = "BH"
 )
 
-combined_path <- file.path(paths_rates, "all_phylolm_results.csv")
+combined_path <- file.path(paths_out, "all_phylolm_results.csv")
 write_csv(all_res, combined_path)
 message("  Written: ", combined_path)
 
@@ -199,7 +200,7 @@ print(sig)
 
 message("\nCorrelation matrix of predictors (first gene with full data):")
 ref_gene <- genes[1]
-ref_path <- file.path(paths_rates, paste0(ref_gene, "_rates.csv"))
+ref_path <- file.path(paths_rates, paste0(ref_gene, "_rates.csv"))  # rates stay in root
 if (file.exists(ref_path)) {
   ref_df <- read_csv(ref_path, show_col_types = FALSE)
   avail  <- intersect(PREDICTOR_TERMS, names(ref_df))

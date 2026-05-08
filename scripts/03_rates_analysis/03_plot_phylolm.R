@@ -27,7 +27,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # ── Load results ──────────────────────────────────────────────────────────────
 res <- lapply(ALL_GENES, function(g) {
-  path <- file.path(PATHS$rates, paste0(g, "_phylolm_results.csv"))
+  path <- file.path(PATHS$rates_phylolm, paste0(g, "_phylolm_results.csv"))
   if (!file.exists(path)) { warning("Missing: ", path); return(NULL) }
   read_csv(path, show_col_types = FALSE)
 }) |> bind_rows()
@@ -114,7 +114,7 @@ ggsave(out_path, p, width = 9, height = 6, dpi = 180)
 message("Saved: ", out_path)
 
 # ── FDR-corrected forest plot ─────────────────────────────────────────────────
-fdr_path <- file.path(PATHS$rates, "all_phylolm_results.csv")
+fdr_path <- file.path(PATHS$rates_phylolm, "all_phylolm_results.csv")
 if (file.exists(fdr_path)) {
   res_fdr <- read_csv(fdr_path, show_col_types = FALSE)
 

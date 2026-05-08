@@ -28,7 +28,9 @@ PATHS <- list(
   test_rates        = here("data", "test", "rates"),
   codeml     = here("data", "codeml"),
   yn00       = here("data", "yn00"),
-  rates      = here("data", "rates"),
+  rates         = here("data", "rates"),
+  rates_phylolm = here("data", "rates", "phylolm"),
+  rates_brms    = here("data", "rates", "brms"),
   scripts    = here("scripts"),
   R          = here("R")
 )

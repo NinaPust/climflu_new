@@ -47,6 +47,7 @@ if (use_test) message("*** Running in TEST mode ***")
 
 paths_timed <- if (use_test) PATHS$test_trees_timed else PATHS$trees_timed
 paths_rates <- if (use_test) PATHS$test_rates       else PATHS$rates
+paths_out   <- if (use_test) PATHS$test_rates       else PATHS$rates_phylolm
 
 PREDICTOR_TERMS <- c("scaled_temp", "scaled_humidity",
                      "scaled_delta_temp", "scaled_delta_humidity",
@@ -58,7 +59,7 @@ for (gene in genes) {
 
   rates_path <- file.path(paths_rates, paste0(gene, "_rates.csv"))
   tree_path  <- file.path(paths_timed, paste0(gene, "_timetree.nwk"))
-  out_path   <- file.path(paths_rates,
+  out_path   <- file.path(paths_out,
                           paste0(gene, "_phylolm_country_results.csv"))
 
   if (!file.exists(rates_path)) { warning("Missing: ", rates_path); next }
@@ -161,7 +162,7 @@ for (gene in genes) {
 message("\nApplying BH-FDR correction...")
 
 all_res <- lapply(genes, function(g) {
-  path <- file.path(paths_rates, paste0(g, "_phylolm_country_results.csv"))
+  path <- file.path(paths_out, paste0(g, "_phylolm_country_results.csv"))
   if (!file.exists(path)) return(NULL)
   read_csv(path, show_col_types = FALSE)
 }) |> bind_rows()
@@ -172,7 +173,7 @@ all_res$p.fdr[predictor_rows] <- p.adjust(
   all_res$p.value[predictor_rows], method = "BH"
 )
 
-combined_path <- file.path(paths_rates, "all_phylolm_country_results.csv")
+combined_path <- file.path(paths_out, "all_phylolm_country_results.csv")
 write_csv(all_res, combined_path)
 message("  Written: ", combined_path)
 

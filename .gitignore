@@ -47,3 +47,7 @@ CLAUDE.md
 # Archived intermediate tree builds
 data/trees/archive/
 figures/trees/archive/
+data/epitope/
+
+# Archive (superseded scripts, figures, results)
+archive/

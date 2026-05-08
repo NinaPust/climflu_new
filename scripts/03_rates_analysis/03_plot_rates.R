@@ -65,24 +65,6 @@ p1 <- dat |>
   theme(legend.position = "bottom")
 print(p1)
 
-# ── 2. Log omega distribution per gene ────────────────────────────────────────
-has_omega <- dat |> filter(is.finite(log_omega)) |> nrow() > 0
-if (has_omega) {
-  p2 <- dat |>
-    filter(is.finite(log_omega)) |>
-    ggplot(aes(x = log_omega, fill = gene, colour = gene)) +
-    geom_density(alpha = 0.35, linewidth = 0.6) +
-    geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
-    scale_fill_manual(values = GENE_COLOURS, labels = GENE_LABELS, name = NULL) +
-    scale_colour_manual(values = GENE_COLOURS, labels = GENE_LABELS, name = NULL) +
-    labs(title = "Distribution of log(dN/dS) by gene",
-         subtitle = "Dashed line = dN/dS of 1 (neutral evolution)",
-         x = "log(dN/dS)", y = "Density") +
-    theme_bw(base_size = 12) +
-    theme(legend.position = "bottom")
-  print(p2)
-}
-
 # ── 3. Rate over time ──────────────────────────────────────────────────────────
 p3 <- dat |>
   filter(is.finite(log_rate)) |>
@@ -213,6 +195,134 @@ p10 <- dat |>
   theme_bw(base_size = 11) +
   theme(strip.text = element_text(size = 9))
 print(p10)
+
+# ── Omega section (only if log_omega data are present) ────────────────────────
+has_omega_data <- dat |> filter(is.finite(log_omega)) |> nrow() > 0
+
+if (has_omega_data) {
+
+  # ── O1. Log omega distribution per gene ───────────────────────────────────────
+  pO1 <- dat |>
+    filter(is.finite(log_omega)) |>
+    ggplot(aes(x = log_omega, fill = gene, colour = gene)) +
+    geom_density(alpha = 0.35, linewidth = 0.6) +
+    geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
+    scale_fill_manual(values = GENE_COLOURS, labels = GENE_LABELS, name = NULL) +
+    scale_colour_manual(values = GENE_COLOURS, labels = GENE_LABELS, name = NULL) +
+    labs(title = "Distribution of log(dN/dS) by gene",
+         subtitle = "Dashed line at log(dN/dS) = 0, i.e. dN/dS = 1 (neutral evolution)",
+         x = "log(dN/dS)", y = "Density") +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "bottom")
+  print(pO1)
+
+  # ── O2. Omega over time ────────────────────────────────────────────────────────
+  pO2 <- dat |>
+    filter(is.finite(log_omega)) |>
+    ggplot(aes(x = year, y = log_omega, colour = gene)) +
+    geom_point(alpha = 0.15, size = 0.7) +
+    geom_smooth(method = "loess", se = FALSE, linewidth = 1, span = 0.6) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey40") +
+    facet_wrap(~subtype) +
+    scale_colour_manual(values = GENE_COLOURS, labels = GENE_LABELS, name = NULL) +
+    labs(title = "log(dN/dS) over time",
+         x = "Year", y = "log(dN/dS)") +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "bottom")
+  print(pO2)
+
+  # ── O3. Omega vs temperature ───────────────────────────────────────────────────
+  pO3 <- dat |>
+    filter(is.finite(log_omega), is.finite(era5_temp_mean)) |>
+    ggplot(aes(x = era5_temp_mean, y = log_omega, colour = gene)) +
+    geom_point(alpha = 0.12, size = 0.8) +
+    geom_smooth(method = "lm", se = TRUE, linewidth = 0.9, alpha = 0.15) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey40") +
+    facet_wrap(~protein, scales = "free_y") +
+    scale_colour_manual(values = GENE_COLOURS, labels = GENE_LABELS, name = NULL) +
+    labs(title = "log(dN/dS) vs ERA5 temperature",
+         x = "Monthly mean temperature (°C)", y = "log(dN/dS)") +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "bottom")
+  print(pO3)
+
+  # ── O4. Omega vs relative humidity ────────────────────────────────────────────
+  pO4 <- dat |>
+    filter(is.finite(log_omega), is.finite(humidity_rh)) |>
+    ggplot(aes(x = humidity_rh, y = log_omega, colour = gene)) +
+    geom_point(alpha = 0.12, size = 0.8) +
+    geom_smooth(method = "lm", se = TRUE, linewidth = 0.9, alpha = 0.15) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey40") +
+    facet_wrap(~protein, scales = "free_y") +
+    scale_colour_manual(values = GENE_COLOURS, labels = GENE_LABELS, name = NULL) +
+    labs(title = "log(dN/dS) vs relative humidity",
+         x = "Relative humidity (%)", y = "log(dN/dS)") +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "bottom")
+  print(pO4)
+
+  # ── O5. Omega by month ────────────────────────────────────────────────────────
+  pO5 <- dat |>
+    filter(is.finite(log_omega)) |>
+    mutate(month = factor(month, levels = 1:12, labels = month.abb)) |>
+    ggplot(aes(x = month, y = log_omega, fill = gene)) +
+    geom_boxplot(outlier.size = 0.4, outlier.alpha = 0.3,
+                 linewidth = 0.4, width = 0.7) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey40") +
+    facet_wrap(~label, scales = "free_y", ncol = 3) +
+    scale_fill_manual(values = GENE_COLOURS, guide = "none") +
+    labs(title = "log(dN/dS) by month of sample collection",
+         x = "Month", y = "log(dN/dS)") +
+    theme_bw(base_size = 11) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+          strip.text  = element_text(size = 9))
+  print(pO5)
+
+  # ── O6. Season cosine vs omega ─────────────────────────────────────────────────
+  if ("season_cos" %in% names(dat)) {
+    pO6 <- dat |>
+      filter(is.finite(log_omega), is.finite(season_cos)) |>
+      ggplot(aes(x = season_cos, y = log_omega, colour = gene)) +
+      geom_point(alpha = 0.12, size = 0.8) +
+      geom_smooth(method = "lm", se = TRUE, linewidth = 0.9, alpha = 0.15) +
+      geom_hline(yintercept = 0, linetype = "dashed", colour = "grey40") +
+      facet_wrap(~protein, scales = "free_y") +
+      scale_colour_manual(values = GENE_COLOURS, labels = GENE_LABELS, name = NULL) +
+      scale_x_continuous(
+        breaks = c(-1, 0, 1),
+        labels = c("-1\n(off-season)", "0", "+1\n(peak flu season)")
+      ) +
+      labs(title = "log(dN/dS) vs hemisphere-adjusted flu season",
+           x = "Season cosine", y = "log(dN/dS)") +
+      theme_bw(base_size = 12) +
+      theme(legend.position = "bottom")
+    print(pO6)
+  }
+
+  # ── O7. Geographic distribution of omega ──────────────────────────────────────
+  ptsO7 <- dat |>
+    filter(is.finite(log_omega), is.finite(latitude), is.finite(longitude))
+  pO7 <- ggplot() +
+    geom_polygon(data = world,
+                 aes(x = long, y = lat, group = group),
+                 fill = "grey92", colour = "grey75", linewidth = 0.15) +
+    geom_point(data = ptsO7,
+               aes(x = longitude, y = latitude, colour = log_omega),
+               alpha = 0.4, size = 0.8) +
+    facet_wrap(~label, ncol = 3) +
+    scale_colour_viridis_c(name = "log(dN/dS)", option = "plasma") +
+    coord_fixed(ratio = 1.3, xlim = c(-180, 180), ylim = c(-60, 75)) +
+    labs(title = "Geographic distribution of log(dN/dS)") +
+    theme_bw(base_size = 10) +
+    theme(axis.text       = element_blank(),
+          axis.ticks      = element_blank(),
+          axis.title      = element_blank(),
+          strip.text      = element_text(size = 8),
+          legend.position = "bottom",
+          panel.grid      = element_blank())
+  print(pO7)
+
+} # end has_omega_data
 
 dev.off()
 message("Saved: ", pdf_path)

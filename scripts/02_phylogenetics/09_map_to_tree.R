@@ -46,6 +46,13 @@ for (gene in genes) {
   rds_path  <- file.path(PATHS$rates, paste0(gene, "_dNdS_matrix.rds"))
   tree_path <- file.path(PATHS$trees_pruned, paste0(gene, "_pruned.nwk"))
 
+  out_dn <- file.path(PATHS$trees, paste0(gene, "_dN_tree.nwk"))
+  out_ds <- file.path(PATHS$trees, paste0(gene, "_dS_tree.nwk"))
+  if (file.exists(out_dn) && file.exists(out_ds)) {
+    message("  Both trees already exist, skipping.")
+    next
+  }
+
   if (!file.exists(rds_path)) {
     warning("Matrix RDS not found, skipping: ", rds_path); next
   }
@@ -90,8 +97,6 @@ for (gene in genes) {
   dS_tree <- nnls.tree(as.dist(dS_mat), tree, rooted = FALSE)
   message("  Done (", round((proc.time() - t0)[["elapsed"]]), "s)")
 
-  out_dn <- file.path(PATHS$trees, paste0(gene, "_dN_tree.nwk"))
-  out_ds <- file.path(PATHS$trees, paste0(gene, "_dS_tree.nwk"))
   write.tree(dN_tree, out_dn)
   write.tree(dS_tree, out_ds)
   message("  dN tree: ", out_dn)

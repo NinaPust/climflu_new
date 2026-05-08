@@ -90,11 +90,24 @@ for (gene in genes) {
     message("  dNdS matrix not found — dN/dS columns will be NA")
   }
 
-  # Terminal branch dN/dS rates from fastme.bal trees (GENES only, not PA)
-  fastme_dir  <- file.path(PATHS$trees, "fastmebal")
-  dn_tree_path <- file.path(fastme_dir, paste0(gene, "_dN_tree.nwk"))
-  ds_tree_path <- file.path(fastme_dir, paste0(gene, "_dS_tree.nwk"))
-  has_fastme <- file.exists(dn_tree_path) && file.exists(ds_tree_path)
+  # Terminal branch dN/dS rates — prefer nnls trees, fall back to fastme.bal
+  nnls_dn_path   <- file.path(PATHS$trees, paste0(gene, "_dN_tree.nwk"))
+  nnls_ds_path   <- file.path(PATHS$trees, paste0(gene, "_dS_tree.nwk"))
+  fastme_dir     <- file.path(PATHS$trees, "fastmebal")
+  fastme_dn_path <- file.path(fastme_dir,  paste0(gene, "_dN_tree.nwk"))
+  fastme_ds_path <- file.path(fastme_dir,  paste0(gene, "_dS_tree.nwk"))
+
+  if (file.exists(nnls_dn_path) && file.exists(nnls_ds_path)) {
+    dn_tree_path <- nnls_dn_path;  ds_tree_path <- nnls_ds_path
+    message("  Using nnls dN/dS trees")
+  } else if (file.exists(fastme_dn_path) && file.exists(fastme_ds_path)) {
+    dn_tree_path <- fastme_dn_path; ds_tree_path <- fastme_ds_path
+    message("  Using fastme.bal dN/dS trees")
+  } else {
+    dn_tree_path <- NULL; ds_tree_path <- NULL
+  }
+
+  has_fastme <- !is.null(dn_tree_path)
   if (has_fastme) {
     dn_tree <- read.tree(dn_tree_path)
     ds_tree <- read.tree(ds_tree_path)
@@ -105,7 +118,7 @@ for (gene in genes) {
     dn_bl[dn_bl < 0] <- 0
     ds_bl[ds_bl < 0] <- 0
   } else {
-    message("  fastme dN/dS trees not found — branch rate columns will be NA")
+    message("  No dN/dS trees found — branch rate columns will be NA")
   }
 
   # ── Terminal branch rate (subst/site/yr) ──────────────────────────────────

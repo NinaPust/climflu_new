@@ -94,7 +94,7 @@ make_forest <- function(plot_df, title, subtitle) {
 }
 
 # ── Nominal p < 0.05 ──────────────────────────────────────────────────────────
-res_path <- file.path(PATHS$rates, "all_phylolm_dnds_results.csv")
+res_path <- file.path(PATHS$rates_phylolm, "all_phylolm_dnds_results.csv")
 if (!file.exists(res_path)) stop("Results not found: ", res_path)
 res <- read_csv(res_path, show_col_types = FALSE)
 
