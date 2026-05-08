@@ -51,3 +51,6 @@ data/epitope/
 
 # Archive (superseded scripts, figures, results)
 archive/
+
+# Paper drafts / previous versions
+paper/old_paper.docx
