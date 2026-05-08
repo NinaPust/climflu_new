@@ -22,47 +22,54 @@
 \begin{itemize}
   \item Influenza A shows marked seasonal patterns: winter peaks in temperate
         regions, rainy-season peaks in the tropics; occasional pandemics from
-        major genomic change.
+        major genomic change. [Petrova \& Russell 2018; Trovão \& Nelson 2020;
+        Hsieh et al.\ 2006]
   \item Local climates influence variant emergence via transmission mode, host
-        immunity, and respiratory tract conditions.
+        immunity, and respiratory tract conditions. [Kudo et al.\ 2019]
   \item Colder, drier conditions increase droplet stability, relaxing the
-        population bottleneck at transmission; hot/humid conditions reduce
-        desiccation --- the overall climate effect on evolution is complex and
-        poorly understood.
+        population bottleneck at transmission [Frise et al.\ 2016; Lowen et al.\
+        2007]; hot/humid conditions reduce desiccation [Minhaz Ud-Dean 2010]
+        --- the overall climate effect on evolution is complex and poorly
+        understood. [Deyle et al.\ 2016]
   \item Surveillance data (HA + NA sequences with date and location) provide a
         window into strain emergence even without patient-level metadata.
+        [Volz et al.\ 2013]
 \end{itemize}
 
 \subsection*{Surface proteins HA and NA as evolutionary targets}
 \begin{itemize}
   \item HA binds sialic acids (viral entry); NA cleaves sialic acids (virion
         release) --- both are fast-evolving and central to transmission
-        efficiency.
+        efficiency. [Nelson \& Holmes 2007; Matsuoka et al.\ 2013]
   \item Function is acutely sensitive to extracellular conditions (pH, mucus
-        composition, temperature).
+        composition, temperature). [Tosheva et al.\ 2023; Klenow et al.\ 2023]
   \item Variants with lower HA activation pH have a selective advantage in
-        mildly acidic extracellular environments.
-  \item Cold/dry conditions reduce mucociliary transport velocity and lower
-        airway pH --- the airway is therefore a climate-sensitive site of
-        selection on surface proteins.
+        mildly acidic extracellular environments. [Russier et al.\ 2016;
+        Singanayagam et al.\ 2019]
+  \item Cold/dry conditions reduce mucociliary transport velocity
+        [Kilgour et al.\ 2004; Kelly et al.\ 2021] and lower airway pH
+        [Kullmann et al.\ 2008] --- the airway is therefore a climate-sensitive
+        site of selection on surface proteins.
   \item Dry air also impairs innate antiviral defence and tissue repair,
-        potentially increasing susceptibility to infection.
+        potentially increasing susceptibility to infection. [Kudo et al.\ 2019]
 \end{itemize}
 
 \subsection*{Antigenic drift and climate}
 \begin{itemize}
   \item Antigenic drift (mutation accumulation under immune pressure) is a
-        primary mechanism of novel strain emergence; antigenic shift
-        (reassortment) is a separate, episodic process not the focus here.
+        primary mechanism of novel strain emergence [Nelson \& Holmes 2007;
+        Wille \& Holmes 2020]; antigenic shift (reassortment) is a separate,
+        episodic process not the focus here.
   \item Genetic draft: climate-driven selection could carry neutral synonymous
         mutations, explaining any signal in overall rate without a corresponding
-        $\omega$ signal.
+        $\omega$ signal. [Gillespie 2000]
   \item Warm tropical/subtropical regions contribute disproportionately to
         global influenza A diversity; H3N2 shows particularly fast antigenic
         drift and geographic diffusion despite lower seasonal amplitude.
+        [Baker et al.\ 2021; Rambaut et al.\ 2008]
   \item Global climate change may expand evolutionary hotspots and shift
         seasonal dynamics toward year-round transmission --- motivating a
-        quantitative test of the climate--evolution link.
+        quantitative test of the climate--evolution link. [Baker et al.\ 2021]
 \end{itemize}
 
 \subsection*{Gaps and study rationale}
@@ -87,7 +94,7 @@
 \subsection*{Sequence data}
 \begin{itemize}
   \item GISAID EpiFlu: HA (H1, H3) and NA (N1, N2) genes for H1N1 and H3N2;
-        PA for both subtypes as negative control.
+        PA for both subtypes as negative control. \textcolor{noteblue}{[REF: GISAID]}
   \item \textit{[Add time range and approximate N per gene once finalised.]}
   \item Metadata: collection date (month resolution), location
         (country/region string).
@@ -100,25 +107,32 @@
   \item Location strings geocoded to lat/lon via Nominatim (OpenStreetMap)
         with hierarchical fallback to coarser geographic levels; results cached
         in \texttt{data/raw/location\_coords\_cache.csv}.
+        \textcolor{noteblue}{[REF: Nominatim / OpenStreetMap]}
   \item ERA5-Land monthly means fetched from the Copernicus CDS
         (\texttt{scripts/00\_metadata/02\_attach\_climate.py}): 2-m temperature
         and 2-m dewpoint at sample location and collection month.
+        \textcolor{noteblue}{[REF: ERA5-Land / Copernicus CDS --- old paper ref 41]}
   \item Relative humidity derived from temperature and dewpoint using the
         Magnus formula; temperature converted from Kelvin to Celsius.
+        \textcolor{noteblue}{[REF: Magnus formula]}
   \item Population density: \textit{[source to be added; currently largely NA.]}
+        \textcolor{noteblue}{[REF: population density source TBD]}
 \end{itemize}
 
 \subsection*{Sequence alignment and phylogenetics}
 \begin{itemize}
   \item Codon-aware pairwise alignment using MACSE v2.07 (batch $\times$ batch
         to manage runtime); columns with $>$50\% missing data excluded.
+        \textcolor{noteblue}{[REF: MACSE --- old paper ref 47]}
   \item Initial phylogeny inferred with MAPLE (fast ML, pandemic-scale).
+        \textcolor{noteblue}{[REF: MAPLE --- old paper ref 45]}
   \item Two-round pruning: round 1 removes near-zero-length branches (likely
         identical/duplicate sequences); round 2 removes outlier-long branches
         (likely sequencing errors or mis-assignments). Thresholds set in
         \texttt{config.R}.
   \item Molecular dating with TreeTime using sampling times as calibrations to
         obtain a timetree with branch lengths in years.
+        \textcolor{noteblue}{[REF: TreeTime --- old paper ref 46]}
   \item Overall per-sample evolutionary rate $=$ terminal branch length
         (substitutions) $\div$ branch duration (years).
 \end{itemize}
@@ -127,8 +141,10 @@
 \begin{itemize}
   \item MACSE codon alignments used for pairwise dN and dS estimation via
         codeml (PAML), HKY$+\Gamma$ and F3$\times$4 models.
+        \textcolor{noteblue}{[REF: PAML/codeml --- old paper refs 49, 50; HKY+$\Gamma$ model; F3$\times$4 codon model]}
   \item Branch lengths in dN and dS fitted from pairwise distances onto the
         MAPLE tree topology via NNLS (\texttt{phangorn::nnls.tree}).
+        \textcolor{noteblue}{[REF: phangorn --- old paper ref 51]}
   \item $\omega$ (dN/dS) rate per sample $=$ (dN/dS) $\div$ branch duration.
   \item Samples with near-zero or numerically unstable rates excluded
         (log rate $< -8$).
@@ -138,6 +154,7 @@
 \begin{itemize}
   \item Phylogenetic generalised linear model via \texttt{phylolm} (Brownian
         motion covariance); Pagel's $\lambda$ estimated during regression.
+        \textcolor{noteblue}{[REF: phylolm --- old paper ref 52]}
   \item Response variables: (1) log overall evolutionary rate,
         (2) log $\omega$ rate.
   \item Predictors: temperature, relative humidity, population density, and
