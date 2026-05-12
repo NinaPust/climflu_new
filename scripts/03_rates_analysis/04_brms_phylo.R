@@ -38,13 +38,14 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
   library(tidybayes)
+  library(cluster)
 })
 
 source(here("config.R"))
 source(here("R", "climate_utils.R"))
 
 # ── Settings ──────────────────────────────────────────────────────────────────
-N_SUB <- 2000q
+N_SUB <- Inf
 
 ALL_GENES <- c(GENES, "PA_H1N1", "PA_H3N2")
 
@@ -63,7 +64,9 @@ genes    <- if ("--gene" %in% args) {
 use_test <- "--test" %in% args
 CHAINS   <- as.integer(get_arg("--chains", 4))
 ITER     <- as.integer(get_arg("--iter",   2000))
-SEED     <- as.integer(get_arg("--seed",   42))
+SEED        <- as.integer(get_arg("--seed", 42))
+seed_default <- 42L
+seed_suffix  <- if (SEED != seed_default) paste0("_seed", SEED) else ""
 
 if (use_test) message("*** Running in TEST mode ***")
 
@@ -79,21 +82,55 @@ PREDICTOR_TERMS <- c("scaled_temp", "scaled_humidity",
                      "scaled_delta_temp", "scaled_delta_humidity",
                      "scaled_sampling_density", "scaled_pop_density")
 
-# ── Helper: stratified subsample (by year) ────────────────────────────────────
-stratified_subsample <- function(df, n, seed = SEED) {
+# ── Helper: phylogenetically-stratified subsample ────────────────────────────
+# Clusters tips by phylogenetic distance (cophenetic) using k-medoids, then
+# stratifies the subsample by year × cluster so that both temporal coverage
+# and tree topology are represented. Falls back to year-only stratification
+# if the tree is not provided or n >= nrow(df).
+#
+# N_CLUST: number of phylogenetic clusters. More clusters = finer resolution
+# but slower (cophenetic distance matrix is O(n^2)). 40 works well for
+# influenza trees of 5k-10k tips.
+stratified_subsample <- function(df, n, tree = NULL, seed = SEED,
+                                 n_clust = 40) {
   set.seed(seed)
   if (nrow(df) <= n) return(df)
-  if (!"year" %in% names(df)) return(df[sample(nrow(df), n), ])
-  total_n     <- nrow(df)
-  year_counts <- df |>
-    count(year, name = "grp_n") |>
-    mutate(.k = pmax(1L, as.integer(round(grp_n / total_n * n))))
-  sampled <- lapply(split(df, df$year), function(sub) {
-    k <- year_counts$.k[year_counts$year == sub$year[1]]
-    sub[sample(nrow(sub), min(k, nrow(sub))), ]
-  })
-  result <- do.call(rbind, sampled)
-  result[sample(nrow(result), min(n, nrow(result))), ]
+
+  # ── Phylogenetic clustering ───────────────────────────────────────────────
+  if (!is.null(tree) && requireNamespace("cluster", quietly = TRUE)) {
+    message("  Computing cophenetic distances for phylogenetic clustering...")
+    coph   <- cophenetic(tree)
+    # keep only tips in df (tree may be larger at this point)
+    tips   <- intersect(rownames(coph), df$accession)
+    coph   <- as.dist(coph[tips, tips])
+
+    k      <- min(n_clust, length(tips) - 1L)
+    pam_fit <- cluster::pam(coph, k = k, diss = TRUE)
+    df$phylo_cluster <- pam_fit$clustering[df$accession]
+    strat_vars <- c("phylo_cluster",
+                    if ("year" %in% names(df)) "year")
+  } else {
+    strat_vars <- if ("year" %in% names(df)) "year" else NULL
+  }
+
+  # ── Proportional allocation across strata ────────────────────────────────
+  if (is.null(strat_vars)) return(df[sample(nrow(df), n), ])
+
+  strata <- df |>
+    count(across(all_of(strat_vars)), name = "grp_n") |>
+    mutate(.k = pmax(1L, as.integer(round(grp_n / nrow(df) * n))))
+
+  sampled <- df |>
+    left_join(strata, by = strat_vars) |>
+    group_by(across(all_of(strat_vars))) |>
+    group_map(function(sub, key) {
+      k <- unique(sub$.k)
+      sub[sample(nrow(sub), min(k, nrow(sub))), ]
+    }) |>
+    bind_rows()
+
+  # trim or top-up to exactly n
+  sampled[sample(nrow(sampled), min(n, nrow(sampled))), ]
 }
 
 # ── Helper: posterior summary for fixed effects ───────────────────────────────
@@ -126,7 +163,7 @@ for (gene in genes) {
 
   rates_path <- file.path(paths_rates, paste0(gene, "_rates.csv"))
   tree_path  <- file.path(paths_timed, paste0(gene, "_timetree.nwk"))
-  out_path   <- file.path(paths_out, paste0(gene, "_brms_results.csv"))
+  out_path   <- file.path(paths_out, paste0(gene, "_brms_results", seed_suffix, ".csv"))
 
   if (!file.exists(rates_path)) { warning("Missing: ", rates_path); next }
   if (!file.exists(tree_path))  { warning("Missing: ", tree_path);  next }
@@ -160,12 +197,13 @@ for (gene in genes) {
                   if ("scaled_sampling_density" %in% names(df)) "scaled_sampling_density",
                   if (has_pop) "scaled_pop_density")
 
-  message("  ", nrow(df), " taxa available; subsampling to ",
-          min(N_SUB, nrow(df)))
+  message("  ", nrow(df), " taxa available (using full dataset)")
 
-  sub_df   <- stratified_subsample(df, N_SUB)
-  sub_tree <- keep.tip(tree, sub_df$accession)
-  sub_df   <- sub_df |> arrange(match(accession, sub_tree$tip.label))
+  # sub_df   <- stratified_subsample(df, N_SUB, tree = tree)
+  # sub_tree <- keep.tip(tree, sub_df$accession)
+  # sub_df   <- sub_df |> arrange(match(accession, sub_tree$tip.label))
+  sub_df   <- df
+  sub_tree <- tree
 
   # Phylogenetic covariance matrix, scaled so max diagonal = 1
   A <- vcv(sub_tree)
@@ -261,7 +299,8 @@ for (gene in genes) {
 # ── Combine ───────────────────────────────────────────────────────────────────
 if (length(all_results) > 0) {
   combined <- bind_rows(all_results)
-  combined_path <- file.path(paths_out, "all_brms_results.csv")
+  combined_path <- file.path(paths_out,
+                             paste0("all_brms_results", seed_suffix, ".csv"))
   write_csv(combined, combined_path)
   message("\nWritten combined: ", combined_path)
 
