@@ -5,6 +5,8 @@
 \usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
 \definecolor{noteblue}{RGB}{30, 90, 160}
 
 \title{\textbf{Manuscript Outline}\\
@@ -115,8 +117,10 @@
   \item Relative humidity derived from temperature and dewpoint using the
         Magnus formula; temperature converted from Kelvin to Celsius.
         \textcolor{noteblue}{[REF: Magnus formula]}
-  \item Population density: \textit{[source to be added; currently largely NA.]}
-        \textcolor{noteblue}{[REF: population density source TBD]}
+  \item Population density extracted from the Global Human Settlement Layer
+        (GHSL R2023A, 100\,m resolution, Mollweide projection); epoch matched
+        to sample collection year (2010/2015/2020 layers available).
+        \textcolor{noteblue}{[REF: GHSL --- Schiavina et al.\ or JRC technical report; check GHSL\_Data\_Package\_2023.pdf]}
 \end{itemize}
 
 \subsection*{Sequence alignment and phylogenetics}
@@ -171,14 +175,91 @@
 \section*{Results --- placeholder structure}
 
 \begin{itemize}
-  \item Sample sizes and geographic/temporal coverage per gene.
-  \item Chronograms and distributions of evolutionary rates and $\omega$
-        per gene (Fig.\ 1).
-  \item Regression coefficients: temperature, humidity, population density per
-        gene for overall rate and $\omega$ (Fig.\ 2 / Table S1).
+  \item Sample sizes and geographic/temporal coverage per gene
+        (Fig.~\ref{fig:overview}).
+  \item Phylogenetic regression coefficients: temperature, humidity, and
+        sampling density per gene for log terminal branch rate, with PA as
+        negative control (Fig.~\ref{fig:forest}).
+  \item Consistency of the temperature effect across genomic regions: terminal
+        branch rate, full-gene NS and S rates, epitope NS rate, and ridge NS
+        rate (Fig.~\ref{fig:multilevel}).
+  \item Non-synonymous and synonymous rates are both negatively associated with
+        temperature, supporting a mutational rather than purely selective
+        mechanism (Fig.~\ref{fig:nsvss}).
   \item Urban/rural subset results.
-  \item PA negative control comparison.
 \end{itemize}
+
+% ── Figure 1 ─────────────────────────────────────────────────────────────────
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig1_data_overview_mod.png}
+  \caption{\textbf{Dataset overview.}
+    \textbf{(A)}~World map of Influenza A sequence sampling locations coloured
+    by ERA5-Land monthly mean temperature at the collection site and month
+    (plasma colour scale; $n = $ \textit{[total after filtering]}).
+    \textbf{(B)}~Kernel density estimates of temperature (left) and relative
+    humidity (right) distributions for H1N1 and H3N2 sequences included in the
+    analysis, showing that both subtypes were sampled across a broad and
+    overlapping range of environmental conditions.
+    \textbf{(C)}~Number of sequences per year (left) and per calendar month
+    (right), stratified by gene and subtype. The pronounced winter peak in the
+    monthly panel reflects the temperate Northern Hemisphere sampling bias;
+    sampling density was included as a covariate in all regression models to
+    account for this.}
+  \label{fig:overview}
+\end{figure}
+
+% ── Figure 3 ─────────────────────────────────────────────────────────────────
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig3_forest_main.png}
+  \caption{\textbf{Phylogenetic regression of log terminal branch rate on
+    climate predictors.}
+    Forest plot of standardised coefficient estimates ($\pm$ 95\% CI) from
+    \texttt{phylolm} (Brownian motion covariance, Pagel's $\lambda$) for each
+    gene and subtype (H1N1, left; H3N2, right). All predictors were scaled to
+    mean 0, SD 1 before fitting. Response variable: log terminal branch
+    substitution rate (substitutions yr$^{-1}$). Proteins: HA (haemagglutinin,
+    H1 or H3), NA (neuraminidase, N1 or N2), and PA (polymerase acidic protein;
+    grey band, negative control). Filled points indicate BH-FDR $p < 0.05$
+    across all predictor $\times$ gene combinations.}
+  \label{fig:forest}
+\end{figure}
+
+% ── Figure 4 ─────────────────────────────────────────────────────────────────
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig4_multilevel.png}
+  \caption{\textbf{Temperature effect on HA evolutionary rate is consistent
+    across genomic regions.}
+    Standardised temperature coefficient ($\pm$ 95\% CI) from \texttt{phylolm}
+    for five response variables in H1 (H1N1, left) and H3 (H3N2, right):
+    log terminal branch rate (timetree), log whole-gene non-synonymous (NS)
+    rate, log whole-gene synonymous (S) rate, log epitope NS rate
+    ($\sim$103 codons), and log antigenic ridge NS rate (7 codons).
+    Ancestral non-synonymous and synonymous changes were reconstructed by
+    maximum parsimony (\texttt{phangorn::ancestral.pars}) and divided by
+    timetree branch length. All response variables are log-transformed rates
+    per year. Filled points indicate BH-FDR $p < 0.05$.}
+  \label{fig:multilevel}
+\end{figure}
+
+% ── Figure 5 ─────────────────────────────────────────────────────────────────
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig5_ns_vs_s.png}
+  \caption{\textbf{Both non-synonymous and synonymous rates are negatively
+    associated with temperature, implicating a mutational mechanism.}
+    Standardised temperature coefficients ($\pm$ 95\% CI) for log NS rate
+    (left panel; ridge, epitope, and whole-gene regions) and log S rate (right
+    panel; epitope and whole-gene) in H1 (H1N1) and H3 (H3N2). A negative
+    effect on synonymous rates --- which are largely neutral and not driven by
+    immune selection --- is inconsistent with a purely selective explanation and
+    instead points to a climate effect on the underlying mutation rate, possibly
+    via temperature-dependent polymerase fidelity or replication kinetics.
+    Filled points indicate BH-FDR $p < 0.05$.}
+  \label{fig:nsvss}
+\end{figure}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section*{Discussion --- placeholder points}
