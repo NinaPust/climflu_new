@@ -7,6 +7,8 @@
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{caption}
+\usepackage{natbib} 
 \definecolor{noteblue}{RGB}{30, 90, 160}
 
 \title{\textbf{Manuscript Outline}\\
@@ -20,75 +22,46 @@
 % ─────────────────────────────────────────────────────────────────────────────
 \section*{Introduction}
 
-\subsection*{Influenza A epidemiology and climate}
-\begin{itemize}
-  \item Influenza A shows marked seasonal patterns: winter peaks in temperate
-        regions, rainy-season peaks in the tropics; occasional pandemics from
-        major genomic change. [Petrova \& Russell 2018; Trovão \& Nelson 2020;
-        Hsieh et al.\ 2006]
-  \item Local climates influence variant emergence via transmission mode, host
-        immunity, and respiratory tract conditions. [Kudo et al.\ 2019]
-  \item Colder, drier conditions increase droplet stability, relaxing the
-        population bottleneck at transmission [Frise et al.\ 2016; Lowen et al.\
-        2007]; hot/humid conditions reduce desiccation [Minhaz Ud-Dean 2010]
-        --- the overall climate effect on evolution is complex and poorly
-        understood. [Deyle et al.\ 2016]
-  \item Surveillance data (HA + NA sequences with date and location) provide a
-        window into strain emergence even without patient-level metadata.
-        [Volz et al.\ 2013]
-\end{itemize}
+%\subsection*{Influenza A epidemiology and climate}
+Influenza A infections display marked seasonal patterns, peaking in winter months in temperate regions and in rainy seasons in the tropics (\cite{petrova_evolution_2018}), also causing devastating epidemics and most of the major pandemics in the last century (\cite{hsieh_influenza_2006, trovao_when_2020}). Local climates are likely to be involved in variant emergence by influencing mode of transmission, host immunity and respiratory tract conditions (\cite{kudo_low_2019}). Climatic conditions that allow greater droplet stability can relac the population bottleneck at transmission (\cite{frise_contact_2016}), reducing the loss of novel variants during host-to-host spread. Experimental work has shown that colder and dried conditions increase transmission efficiency due to enhanced virus survival in airborne droplets (\cite{lowen_influenza_2007, shaman_absolute_2009}). Meanwhile, hot and humid conditions might also promote viral survival by reducing dessication (\cite{minhaz_ud-dean_structural_2010}), such that the role of climate on variant emergence is likely complex (\cite{deyle_global_2016}) and remains poorly understood. Modern global-scale surveillance data frequently includes genetic sequences for the core hemagglutinin (HA) and neuraminidase (NA) viral surface protein genes, which provide fundamental information about strain emergence in addition to date and location of collection, even in the abselnce of additional patient information (\cite{volz_viral_2013}).  
 
-\subsection*{Surface proteins HA and NA as evolutionary targets}
-\begin{itemize}
-  \item HA binds sialic acids (viral entry); NA cleaves sialic acids (virion
-        release) --- both are fast-evolving and central to transmission
-        efficiency. [Nelson \& Holmes 2007; Matsuoka et al.\ 2013]
-  \item Function is acutely sensitive to extracellular conditions (pH, mucus
-        composition, temperature). [Tosheva et al.\ 2023; Klenow et al.\ 2023]
-  \item Variants with lower HA activation pH have a selective advantage in
-        mildly acidic extracellular environments. [Russier et al.\ 2016;
-        Singanayagam et al.\ 2019]
-  \item Cold/dry conditions reduce mucociliary transport velocity
-        [Kilgour et al.\ 2004; Kelly et al.\ 2021] and lower airway pH
-        [Kullmann et al.\ 2008] --- the airway is therefore a climate-sensitive
-        site of selection on surface proteins.
-  \item Dry air also impairs innate antiviral defence and tissue repair,
-        potentially increasing susceptibility to infection. [Kudo et al.\ 2019]
-\end{itemize}
+%\begin{itemize}
+ % \item Influenza A shows marked seasonal patterns: winter peaks in temperate regions, rainy-season peaks in the tropics; occasional pandemics from major genomic change. [Petrova \& Russell 2018; Trovão \& Nelson 2020; Hsieh et al.\ 2006]
+  %\item Local climates influence variant emergence via transmission mode, host immunity, and respiratory tract conditions. [Kudo et al.\ 2019]
+  %\item Colder, drier conditions increase droplet stability, relaxing the population bottleneck at transmission [Frise et al.\ 2016; Lowen et al.\ 2007]; hot/humid conditions reduce desiccation [Minhaz Ud-Dean 2010] --- the overall climate effect on evolution is complex and poorly understood. [Deyle et al.\ 2016]
+  %\item Surveillance data (HA + NA sequences with date and location) provide a window into strain emergence even without patient-level metadata. [Volz et al.\ 2013]
+% \end{itemize}
 
-\subsection*{Antigenic drift and climate}
-\begin{itemize}
-  \item Antigenic drift (mutation accumulation under immune pressure) is a
-        primary mechanism of novel strain emergence [Nelson \& Holmes 2007;
-        Wille \& Holmes 2020]; antigenic shift (reassortment) is a separate,
-        episodic process not the focus here.
-  \item Genetic draft: climate-driven selection could carry neutral synonymous
-        mutations, explaining any signal in overall rate without a corresponding
-        $\omega$ signal. [Gillespie 2000]
-  \item Warm tropical/subtropical regions contribute disproportionately to
-        global influenza A diversity; H3N2 shows particularly fast antigenic
-        drift and geographic diffusion despite lower seasonal amplitude.
-        [Baker et al.\ 2021; Rambaut et al.\ 2008]
-  \item Global climate change may expand evolutionary hotspots and shift
-        seasonal dynamics toward year-round transmission --- motivating a
-        quantitative test of the climate--evolution link. [Baker et al.\ 2021]
-\end{itemize}
+%\subsection*{Surface proteins HA and NA as evolutionary targets}
+The influenza viral surface proteins HA and NA are fast-evolving and directly involved in transmission and infection efficiency (\cite{nelson_evolution_2007}). HA binds to sialic acid on host glycoproteins or glycolipids, facilitationg viral entry into the host cell. Meanwhile, NA cleaves sialic acids on host and virion glycoproteins, enabling the release of virions from the host cells (\cite{matsuoka_comprehensive_2013}). The function od both od these surface proteins can be acutely affected by extracellular environmental conditions, in particular pH (\cite{klenow_influenza_2023, tosheva_hemagglutinin_2023}), pointing to strong selection pressures prior to cell access. Variants that require a lower pH for the activation of HA are thought to have a selective advantage in transmission, as they are less susceptible to inactivation in mildly acidic extracellular environments (\cite{russier_molecular_2016, singanayagam_influenza_2019, tosheva_hemagglutinin_2023}). Meanwhile, colder and drier conditions reduce mucus transport velocity (\cite{kelly_rapid_2021, kilgour_mucociliary_2004}) and likely pH in airways (\cite{kullmann_environmental_2008}). 
 
-\subsection*{Gaps and study rationale}
-\begin{itemize}
-  \item Previous work (including our own earlier analysis) was limited by:
-        use of static climatology (WorldClim) rather than time-matched climate
-        data; NCBI sequences without GISAID-level quality control; no internal
-        protein negative control to distinguish true signal from noise.
-  \item This study uses a GISAID dataset with time-matched ERA5-Land climate
-        data (monthly $\times$ $\sim$0.1\textdegree{} resolution) and includes
-        PA (polymerase acidic protein, internal) as a negative control.
-  \item \textbf{Study aim:} Test whether local temperature, relative humidity,
-        and population density predict molecular evolutionary rates (overall
-        rate, dN/dS) in HA and NA of H1N1 and H3N2 using phylogenetic
-        comparative methods, and compare results against an internal-protein
-        negative control.
-\end{itemize}
+%\begin{itemize}
+ % \item HA binds sialic acids (viral entry); NA cleaves sialic acids (virion release) --- both are fast-evolving and central to transmission efficiency. [Nelson \& Holmes 2007; Matsuoka et al.\ 2013]
+ % \item Function is acutely sensitive to extracellular conditions (pH, mucus composition, temperature). [Tosheva et al.\ 2023; Klenow et al.\ 2023]
+  %\item Variants with lower HA activation pH have a selective advantage in mildly acidic extracellular environments. [Russier et al.\ 2016; Singanayagam et al.\ 2019]
+  %\item Cold/dry conditions reduce mucociliary transport velocity [Kilgour et al.\ 2004; Kelly et al.\ 2021] and lower airway pH [Kullmann et al.\ 2008] --- the airway is therefore a climate-sensitive site of selection on surface proteins.
+  %\item Dry air also impairs innate antiviral defence and tissue repair, potentially increasing susceptibility to infection. [Kudo et al.\ 2019]
+%\end{itemize}
+
+%\subsection*{Antigenic drift and climate}
+Dry air additionally impairs innate antiviral defence and tissue repair in mice, making regions with driest climates likely to worsen susceptibility to severe disease (\cite{kudo_low_2019}) . Environmental temperature and humidity might therefore impact viral evolution via either changed infection times, viral loads, and selection pressures mediated by factors like airway mucus composition. Alternatively, outdoor environmental climate might not be relecant predictor of viral novelty. This might occur if evolution is dominated by intracellular environment (\cite{partlow_influenza_2025}) or by demographic patterns of transmission driven by social habits and networks (\cite{cauchemez_role_2011, endo_within_2021}). 
+
+In RNA viruses like influenza A, mutational genetic change, known as antigenic drift, is shaped by multiple factors including mutation rates, replication dynamics, and host immune pressures (\cite{nelson_evolution_2007, wille_ecology_2020}). Antigenic drift, influenced by host immunity and vaccination, is a potent driver of novel strain emergence in influenza (\cite{bedford_integrating_2014}), along with reassortment events between co-occurring lineages (i.e., antigenic shift) (\cite{nelson_evolution_2007}). Additionally, antigenic drift reduces vaccine eddicacy and maintains some regions as global virus reservoirs (\cite{naeem_antigenic_2020}). Environmental conditions can influenxe evolutionary rates either directly via physical conditions for virion survival, or indirectly by altering social dynamics and people movement. Global climate change might therefore alter the prevalebce and geographic distribution of evolutionary hotspots, likely causing more recurrent or ongoing outbreaks compared to the seasonal peaks currently observed in temperate regions (\cite{baker_implications_2021}). Such changes elevate the risk of novel strain emergence, underscoring the need to test the importance of climate for viral evolution. 
+
+%\begin{itemize}
+  %\item Antigenic drift (mutation accumulation under immune pressure) is a primary mechanism of novel strain emergence [Nelson \& Holmes 2007; Wille \& Holmes 2020]; antigenic shift (reassortment) is a separate,   episodic process not the focus here.
+  %\item Genetic draft: climate-driven selection could carry neutral synonymous mutations, explaining any signal in overall rate without a corresponding  $\omega$ signal. [Gillespie 2000]
+  %\item Warm tropical/subtropical regions contribute disproportionately to global influenza A diversity; H3N2 shows particularly fast antigenic drift and geographic diffusion despite lower seasonal amplitude. [Baker et al.\ 2021; Rambaut et al.\ 2008]
+  %\item Global climate change may expand evolutionary hotspots and shift seasonal dynamics toward year-round transmission --- motivating a quantitative test of the climate--evolution link. [Baker et al.\ 2021]
+%\end{itemize}
+
+%\subsection*{Gaps and study rationale}
+In this study, we use a global data set of influenza A to test for the links between local climate, population density, and rates of molecular evolution of surface antigens in two most common seasonal strains; H1N1 and H3N2. Additionally, we use the polymerase acidic protein gene (PA), an internal, slow-evolving gene, as a negative control. Using a dataset with over \textbf{[X]} surveillance samples of each of the genes, sampled globally across two strains, we inferred terminal branch rates and non-synonymous and synonymous substitution rates per sample. We then drew from global climatic and demographic databases to prepare a per-sample dataset of time-stamped temperature, humidity, and population density. Comparative analysis was then performed on these data to test for fundamental climatic or demographic predictors of evolutionary rates. By characterizing how climate influences viral evolutionary dynamics, we propose hypotheses for the formation of influenza A evolutionary hotspots and seasonal peaks under global climatic change.  
+%\begin{itemize}
+ % \item Previous work (including our own earlier analysis) was limited by: use of static climatology (WorldClim) rather than time-matched climate data; NCBI sequences without GISAID-level quality control; no internal protein negative control to distinguish true signal from noise.
+  %\item This study uses a GISAID dataset with time-matched ERA5-Land climate data (monthly $\times$ $\sim$0.1\textdegree{} resolution) and includes PA (polymerase acidic protein, internal) as a negative control.
+  %\item \textbf{Study aim:} Test whether local temperature, relative humidity and population density predict molecular evolutionary rates (overall rate, dN/dS) in HA and NA of H1N1 and H3N2 using phylogenetic comparative methods, and compare results against an internal-protein negative control.
+%\end{itemize}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section*{Methods}
@@ -189,10 +162,15 @@
   \item Urban/rural subset results.
 \end{itemize}
 
-% ── Figure 1 ─────────────────────────────────────────────────────────────────
+% ── Figure 1 (image) ─────────────────────────────────────────────────────────
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/fig1_data_overview_mod.png}
+\end{figure}
+
+% ── Figure 1 (caption on next page) ─────────────────────────────────────────
+\begin{figure}[H]
+  \ContinuedFloat
   \caption{\textbf{Dataset overview.}
     \textbf{(A)}~World map of Influenza A sequence sampling locations coloured
     by ERA5-Land monthly mean temperature at the collection site and month
@@ -208,6 +186,7 @@
     account for this.}
   \label{fig:overview}
 \end{figure}
+
 
 % ── Figure 3 ─────────────────────────────────────────────────────────────────
 \begin{figure}[H]
@@ -277,4 +256,7 @@
   \item Climate change implications for influenza A evolution and surveillance.
 \end{itemize}
 
+
+\bibliographystyle{plainnat}
+\bibliography{references}
 \end{document}
