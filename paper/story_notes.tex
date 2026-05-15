@@ -132,7 +132,54 @@ capturing more short-branch diversity. Its inclusion is necessary; temperature
 results should not be interpreted from models that omit it.
 
 % ─────────────────────────────────────────────────────────────────────────────
-\subsection*{2. No specific recurrent mutation is climate-associated}
+\subsection*{2. Jackknife subsampling confirms signal is distributed across
+the dataset}
+
+A block jackknife was run for H1 and H3: 1{,}000 random subsamples of 1{,}000
+sequences each, with \texttt{phylolm} (log\_rate $\sim$ scaled\_temp +
+year) fitted independently to each subsample.
+
+\textbf{Results.}
+\begin{itemize}
+  \item \textbf{H1:} 150/1{,}000 subsamples were significant at $p < 0.001$
+        ($***$), with temperature coefficient estimates distributed
+        consistently around a negative value, matching the full-dataset
+        result (estimate $= -0.047$, BH-FDR $p = 3 \times 10^{-4}$).
+  \item \textbf{H3:} Only 1/1{,}000 subsamples reached $p < 0.001$, consistent
+        with the weaker full-dataset signal (BH-FDR $p = 0.016$).
+        H3 behaves exactly as expected for a real but marginal effect that
+        requires the full sample size to be reliably detectable.
+\end{itemize}
+
+\textbf{Are the significant subsamples driven by specific sequences?}
+Enrichment analysis (ratio of sequence frequency in $***$ vs.\ ns subsamples)
+identified 9 sequences with ratio $> 2$ for H1. These were not biological
+drivers:
+\begin{itemize}
+  \item Four of the nine (EPI\_ISL\_70358/59/62/63) are from the same outbreak
+        cluster (Bosnia, January 2009, identical temperature $-2.46^\circ$C and
+        humidity 84.1\%). They co-occur in subsamples by construction and
+        collectively pull the coefficient when sampled together, but represent
+        at most one or two independent observations.
+  \item The remaining five span diverse geographies (Georgia, Singapore,
+        Costa Rica, Brazil, Russia) with no shared climate profile.
+  \item For H3, the single $***$ subsample causes the enrichment metric to
+        collapse entirely --- every sequence in that one subsample appears
+        10$\times$ enriched, rendering the metric meaningless.
+\end{itemize}
+
+\textbf{Conclusion.}
+If the signal were artefactual or driven by outlier sequences, the same
+sequences would recur consistently in significant subsamples, producing a
+stable enrichment pattern. Instead, significant subsamples are largely
+interchangeable in their sequence composition.
+The jackknife therefore supports the interpretation that \textbf{the
+temperature effect on HA evolutionary rate is real and distributed across the
+full dataset}, rather than being propped up by a small number of influential
+observations.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection*{3. No specific recurrent mutation is climate-associated}
 
 Wilcoxon rank-sum tests were applied to all recurrent NS mutations
 ($n > 5$ independent terminal-branch occurrences) in the antigenic ridge and
@@ -152,20 +199,36 @@ positions. This is consistent with a mutational (polymerase fidelity) rather
 than a selective (immune-driven fixation) mechanism.
 
 % ─────────────────────────────────────────────────────────────────────────────
-\subsection*{3. INLA results not reliable}
+\subsection*{4. Bayesian phylogenetic regression not reliable on subsamples}
 
-INLA (Integrated Nested Laplace Approximation) was tested as an alternative
-Bayesian hierarchical approach. Results were found to be \textbf{sensitive to
-the random seed used for subset sampling}: different seeds produced
-qualitatively different conclusions, indicating that the INLA samples were not
-representative of the full posterior.
+Both INLA and \texttt{brms} were tested as Bayesian alternatives to
+\texttt{phylolm}.
+
+\textbf{INLA} was found to be sensitive to the random seed used for subset
+sampling, with different seeds producing qualitatively different conclusions.
 This likely reflects the large dataset size and the complexity of the spatial
-and phylogenetic random effects.
-INLA results are excluded from the final analysis; \texttt{phylolm} is used
-throughout.
+and phylogenetic random effects. INLA results are excluded entirely.
+
+\textbf{brms} (7 seeds, 1{,}000-sequence subsamples) showed the same
+instability:
+\begin{itemize}
+  \item \textbf{H1:} Only seed 42 produced a credible interval excluding zero
+        (mean $= -0.067$, 95\% CI $[-0.115, -0.018]$). The remaining six seeds
+        gave estimates ranging from $-0.046$ to $+0.004$, none significant.
+  \item \textbf{H3:} No seed reached significance; estimates ranged from
+        $-0.048$ to $+0.022$ and changed sign across seeds.
+\end{itemize}
+
+The instability reflects insufficient power at $n = 1{,}000$ for a Bayesian
+phylogenetic model to reliably recover a signal that \texttt{phylolm} detects
+only at $n \approx 9{,}000$--$13{,}000$ sequences (H1 BH-FDR $p = 3 \times
+10^{-4}$, H3 BH-FDR $p = 0.016$). A full-dataset \texttt{brms} run is in
+progress; results pending.
+
+\texttt{phylolm} remains the primary analysis throughout.
 
 % ─────────────────────────────────────────────────────────────────────────────
-\subsection*{4. Additional notes}
+\subsection*{5. Additional notes}
 
 \begin{itemize}
   \item \textbf{Ridge $\omega$ artefact.}

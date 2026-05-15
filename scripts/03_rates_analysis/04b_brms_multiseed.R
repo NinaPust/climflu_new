@@ -101,7 +101,7 @@ stratified_subsample <- function(df, n, seed = 42L) {
     group_map(function(sub, key) {
       k <- unique(sub$.k)
       sub[sample(nrow(sub), min(k, nrow(sub))), ]
-    }) |>
+    }, .keep = TRUE) |>
     bind_rows()
 
   sampled[sample(nrow(sampled), min(n, nrow(sampled))), ]
@@ -192,6 +192,7 @@ for (gene in genes) {
   df <- add_phylo_clusters(df, tree)
 
   gene_seed_rows <- list()
+  gene_accession_rows <- list()
 
   for (seed in SEEDS) {
     message("\n  [seed=", seed, "]")
@@ -199,6 +200,12 @@ for (gene in genes) {
     sub_df   <- stratified_subsample(df, N_SUB, seed = seed)
     sub_tree <- keep.tip(tree, sub_df$accession)
     sub_df   <- sub_df |> arrange(match(accession, sub_tree$tip.label))
+
+    gene_accession_rows[[as.character(seed)]] <- tibble(
+      gene      = gene,
+      seed      = seed,
+      accession = sub_df$accession
+    )
 
     for (response in c("log_rate", "log_omega")) {
       if (!response %in% names(sub_df) ||
@@ -278,6 +285,12 @@ for (gene in genes) {
   result_df <- bind_rows(gene_seed_rows)
   write_csv(result_df, out_path)
   message("\n  Written: ", out_path)
+
+  acc_df   <- bind_rows(gene_accession_rows)
+  acc_path <- file.path(paths_out, paste0(gene, "_brms_multiseed_accessions.csv"))
+  write_csv(acc_df, acc_path)
+  message("  Written: ", acc_path)
+
   all_seed_rows[[gene]] <- result_df
 }
 
