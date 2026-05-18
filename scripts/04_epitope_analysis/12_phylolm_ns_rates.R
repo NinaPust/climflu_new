@@ -51,7 +51,8 @@ predictor_terms <- c(
 responses <- c(
   "log_ridge_ns_rate",   "log_ridge_s_rate",
   "log_epitope_ns_rate", "log_epitope_s_rate",
-  "log_full_ns_rate",    "log_full_s_rate"
+  "log_full_ns_rate",    "log_full_s_rate",
+  "log_HA2_ns_rate",     "log_HA2_s_rate"
 )
 
 predictor_labels <- c(
@@ -69,13 +70,16 @@ response_labels <- c(
   log_epitope_ns_rate = "Epitope NS rate",
   log_epitope_s_rate  = "Epitope S rate",
   log_full_ns_rate    = "Full gene NS rate",
-  log_full_s_rate     = "Full gene S rate"
+  log_full_s_rate     = "Full gene S rate",
+  log_HA2_ns_rate     = "HA2 NS rate",
+  log_HA2_s_rate      = "HA2 S rate"
 )
 
 region_labels <- c(
   ridge   = "Ridge",
   epitope = "Epitope",
-  full    = "Full gene"
+  full    = "Full gene",
+  HA2     = "HA2"
 )
 
 # ── Phylolm per gene ──────────────────────────────────────────────────────────
@@ -85,7 +89,7 @@ for (gene in genes) {
 
   rates_path <- file.path(PATHS$rates, paste0(gene, "_rates_epitope.csv"))
   tree_path  <- file.path(PATHS$trees_timed, paste0(gene, "_timetree.nwk"))
-  out_path   <- file.path(PATHS$rates, paste0(gene, "_phylolm_ns_results.csv"))
+  out_path   <- file.path(PATHS$rates_phylolm, paste0(gene, "_phylolm_ns_results.csv"))
 
   if (!file.exists(rates_path)) { warning("Rates not found: ", rates_path); next }
   if (!file.exists(tree_path))  { warning("Tree not found: ",  tree_path);  next }
@@ -150,7 +154,7 @@ for (gene in genes) {
 message("\nApplying BH-FDR correction...")
 
 all_res <- lapply(genes, function(g) {
-  path <- file.path(PATHS$rates, paste0(g, "_phylolm_ns_results.csv"))
+  path <- file.path(PATHS$rates_phylolm, paste0(g, "_phylolm_ns_results.csv"))
   if (!file.exists(path)) return(NULL)
   read_csv(path, show_col_types = FALSE)
 }) |> bind_rows()
@@ -161,7 +165,7 @@ pred_rows     <- all_res$term %in% predictor_terms
 all_res$p.fdr <- NA_real_
 all_res$p.fdr[pred_rows] <- p.adjust(all_res$p.value[pred_rows], method = "BH")
 
-combined_path <- file.path(PATHS$rates, "all_phylolm_ns_results.csv")
+combined_path <- file.path(PATHS$rates_phylolm, "all_phylolm_ns_results.csv")
 write_csv(all_res, combined_path)
 message("Written: ", combined_path)
 
@@ -197,9 +201,10 @@ plot_df <- res |>
       case_when(
         grepl("^log_ridge",   response) ~ "Ridge",
         grepl("^log_epitope", response) ~ "Epitope",
-        grepl("^log_full",    response) ~ "Full gene"
+        grepl("^log_full",    response) ~ "Full gene",
+        grepl("^log_HA2",     response) ~ "HA2"
       ),
-      levels = c("Ridge", "Epitope", "Full gene")
+      levels = c("Ridge", "Epitope", "Full gene", "HA2")
     ),
     rate_type = factor(
       ifelse(grepl("_ns_rate$", response), "NS", "S"),
@@ -256,7 +261,8 @@ make_forest(
 rate_cols <- list(
   ridge   = c(NS = "log_ridge_ns_rate",   S = "log_ridge_s_rate"),
   epitope = c(NS = "log_epitope_ns_rate", S = "log_epitope_s_rate"),
-  full    = c(NS = "log_full_ns_rate",    S = "log_full_s_rate")
+  full    = c(NS = "log_full_ns_rate",    S = "log_full_s_rate"),
+  HA2     = c(NS = "log_HA2_ns_rate",     S = "log_HA2_s_rate")
 )
 
 for (reg in names(rate_cols)) {

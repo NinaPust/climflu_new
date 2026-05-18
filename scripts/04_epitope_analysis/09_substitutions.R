@@ -5,6 +5,7 @@
 #            ridge   — 7 antigenic-ridge codons
 #            epitope — full epitope alignment (~103 codons)
 #            full    — whole HA1+HA2 gene
+#            HA2     — HA2 subunit (conserved; negative control)
 #
 #          Results are appended to data/rates/{gene}_rates_epitope.csv.
 #          Mutation records (individual NS events with residue positions)
@@ -44,7 +45,7 @@ source(here("config.R"))
 
 args    <- commandArgs(trailingOnly = TRUE)
 genes   <- if ("--gene"   %in% args) args[which(args == "--gene")   + 1] else c("H1", "H3")
-regions <- if ("--region" %in% args) args[which(args == "--region") + 1] else c("ridge", "epitope", "full")
+regions <- if ("--region" %in% args) args[which(args == "--region") + 1] else c("ridge", "epitope", "full", "HA2")
 n_cores <- if ("--cores"  %in% args) as.integer(args[which(args == "--cores") + 1]) else
            if ("--sequential" %in% args) 1L else 8L
 

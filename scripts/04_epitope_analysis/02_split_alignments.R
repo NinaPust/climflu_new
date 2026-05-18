@@ -1,7 +1,7 @@
 # scripts/04_epitope_analysis/02_split_alignments.R
 #
 # PURPOSE: Split the MAFFT HA alignment into epitope, non-epitope, ridge,
-#          and non-ridge sub-alignments using column indices from
+#          non-ridge, and HA2 sub-alignments using column indices from
 #          01_map_epitope_sites.R. Only sequences present in the post-MAPLE
 #          pruned accession list are retained.
 #
@@ -12,29 +12,34 @@
 #   data/epitope/{gene}_nonepitope_cols.txt
 #   data/epitope/{gene}_ridge_cols.txt
 #   data/epitope/{gene}_nonridge_cols.txt
+#   data/epitope/{gene}_site_map.csv              (for HA2 column derivation)
 #
 # OUTPUT:
 #   data/epitope/{gene}_epitope_aligned.fasta
 #   data/epitope/{gene}_nonepitope_aligned.fasta
 #   data/epitope/{gene}_ridge_aligned.fasta
 #   data/epitope/{gene}_nonridge_aligned.fasta
+#   data/epitope/{gene}_HA2_aligned.fasta
+#   data/epitope/{gene}_HA2_cols.txt
 #
 # FLAGS:
-#   --gene X   run a single gene (default: H1 H3)
+#   --gene X    run a single gene (default: H1 H3)
+#   --types X   comma-separated subset of types to run (default: all)
 
 suppressPackageStartupMessages({
   library(here)
   library(ape)
+  library(readr)
+  library(dplyr)
 })
 
 source(here("config.R"))
 
-args  <- commandArgs(trailingOnly = TRUE)
-genes <- if ("--gene" %in% args) {
-  args[which(args == "--gene") + 1]
-} else {
-  c("H1", "H3")
-}
+args       <- commandArgs(trailingOnly = TRUE)
+genes      <- if ("--gene"  %in% args) args[which(args == "--gene")  + 1] else c("H1", "H3")
+types_arg  <- if ("--types" %in% args) strsplit(args[which(args == "--types") + 1], ",")[[1]] else NULL
+all_types  <- c("epitope", "nonepitope", "ridge", "nonridge", "HA2")
+run_types  <- if (!is.null(types_arg)) intersect(types_arg, all_types) else all_types
 
 epi_dir <- here("data", "epitope")
 
@@ -43,13 +48,20 @@ for (gene in genes) {
 
   aln_path     <- file.path(PATHS$alignments,  paste0(gene, "_aligned.fasta"))
   acc_path     <- file.path(PATHS$trees_pruned, paste0(gene, "_accessions.txt"))
-  epi_col_path   <- file.path(epi_dir, paste0(gene, "_epitope_cols.txt"))
-  non_col_path   <- file.path(epi_dir, paste0(gene, "_nonepitope_cols.txt"))
-  ridge_col_path <- file.path(epi_dir, paste0(gene, "_ridge_cols.txt"))
+  epi_col_path    <- file.path(epi_dir, paste0(gene, "_epitope_cols.txt"))
+  non_col_path    <- file.path(epi_dir, paste0(gene, "_nonepitope_cols.txt"))
+  ridge_col_path  <- file.path(epi_dir, paste0(gene, "_ridge_cols.txt"))
   nridge_col_path <- file.path(epi_dir, paste0(gene, "_nonridge_cols.txt"))
+  site_map_path   <- file.path(epi_dir, paste0(gene, "_site_map.csv"))
 
-  for (p in c(aln_path, acc_path, epi_col_path, non_col_path,
-              ridge_col_path, nridge_col_path)) {
+  required <- c(aln_path, acc_path)
+  if (any(c("epitope", "nonepitope") %in% run_types))
+    required <- c(required, epi_col_path, non_col_path)
+  if (any(c("ridge", "nonridge") %in% run_types))
+    required <- c(required, ridge_col_path, nridge_col_path)
+  if ("HA2" %in% run_types)
+    required <- c(required, site_map_path)
+  for (p in required) {
     if (!file.exists(p)) stop("Required file not found: ", p)
   }
 
@@ -67,15 +79,6 @@ for (gene in genes) {
           length(accessions) - length(common), " not in alignment)")
   aln <- aln[common, , drop = FALSE]
 
-  # Read column indices (1-based nt columns)
-  epi_cols   <- as.integer(readLines(epi_col_path))
-  non_cols   <- as.integer(readLines(non_col_path))
-  ridge_cols <- as.integer(readLines(ridge_col_path))
-  nridge_cols <- as.integer(readLines(nridge_col_path))
-  message("  Epitope columns: ", length(epi_cols),
-          "  Non-epitope columns: ", length(non_cols),
-          "  Ridge columns: ", length(ridge_cols))
-
   # Subset and remove all-gap sequences
   split_and_write <- function(cols, label, out_path) {
     sub_aln <- aln[, cols, drop = FALSE]
@@ -92,14 +95,40 @@ for (gene in genes) {
               colsep = "", nbcol = -1)
   }
 
-  split_and_write(epi_cols, "epitope",
-                  file.path(epi_dir, paste0(gene, "_epitope_aligned.fasta")))
-  split_and_write(non_cols, "nonepitope",
-                  file.path(epi_dir, paste0(gene, "_nonepitope_aligned.fasta")))
-  split_and_write(ridge_cols, "ridge",
-                  file.path(epi_dir, paste0(gene, "_ridge_aligned.fasta")))
-  split_and_write(nridge_cols, "nonridge",
-                  file.path(epi_dir, paste0(gene, "_nonridge_aligned.fasta")))
+  if ("epitope" %in% run_types || "nonepitope" %in% run_types) {
+    epi_cols <- as.integer(readLines(epi_col_path))
+    non_cols <- as.integer(readLines(non_col_path))
+    message("  Epitope columns: ", length(epi_cols),
+            "  Non-epitope columns: ", length(non_cols))
+    if ("epitope" %in% run_types)
+      split_and_write(epi_cols, "epitope",
+                      file.path(epi_dir, paste0(gene, "_epitope_aligned.fasta")))
+    if ("nonepitope" %in% run_types)
+      split_and_write(non_cols, "nonepitope",
+                      file.path(epi_dir, paste0(gene, "_nonepitope_aligned.fasta")))
+  }
+
+  if ("ridge" %in% run_types || "nonridge" %in% run_types) {
+    ridge_cols  <- as.integer(readLines(ridge_col_path))
+    nridge_cols <- as.integer(readLines(nridge_col_path))
+    message("  Ridge columns: ", length(ridge_cols))
+    if ("ridge" %in% run_types)
+      split_and_write(ridge_cols, "ridge",
+                      file.path(epi_dir, paste0(gene, "_ridge_aligned.fasta")))
+    if ("nonridge" %in% run_types)
+      split_and_write(nridge_cols, "nonridge",
+                      file.path(epi_dir, paste0(gene, "_nonridge_aligned.fasta")))
+  }
+
+  if ("HA2" %in% run_types) {
+    sm       <- read_csv(site_map_path, show_col_types = FALSE)
+    ha2_cols <- sm |> filter(region == "HA2") |> pull(alignment_col) |> sort()
+    message("  HA2 columns (nt): ", length(ha2_cols))
+    cols_out <- file.path(epi_dir, paste0(gene, "_HA2_cols.txt"))
+    writeLines(as.character(ha2_cols), cols_out)
+    split_and_write(ha2_cols, "HA2",
+                    file.path(epi_dir, paste0(gene, "_HA2_aligned.fasta")))
+  }
 }
 
 message("\nDone.")
