@@ -23,17 +23,18 @@ run_phylolm <- function(formula, data, tree, method = "lambda",
 
   names(coef_df) <- c("estimate", "std_error", "t_value", "p.value", "term")
 
-  coef_df$gene     <- gene
-  coef_df$subset   <- subset
-  coef_df$response <- response
-  coef_df$lambda   <- tryCatch(fit$optpar, error = function(e) NA_real_)
-  coef_df$logLik   <- as.numeric(logLik(fit))
-  coef_df$AIC      <- AIC(fit)
-  coef_df$n        <- nrow(data)
+  coef_df$gene      <- gene
+  coef_df$subset    <- subset
+  coef_df$response  <- response
+  coef_df$lambda    <- tryCatch(fit$optpar, error = function(e) NA_real_)
+  coef_df$logLik    <- as.numeric(logLik(fit))
+  coef_df$AIC       <- AIC(fit)
+  coef_df$n         <- nrow(data)
+  coef_df$r.squared <- tryCatch(summary(fit)$r.squared, error = function(e) NA_real_)
 
   coef_df[, c("gene", "subset", "response", "term",
               "estimate", "std_error", "t_value", "p.value",
-              "lambda", "logLik", "AIC", "n")]
+              "lambda", "logLik", "AIC", "n", "r.squared")]
 }
 
 
