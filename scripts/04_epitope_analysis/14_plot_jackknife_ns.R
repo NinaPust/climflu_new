@@ -195,23 +195,43 @@ if (length(all_results) > 0) {
     arrange(region, estimate) |>
     group_by(subtype, region) |>
     mutate(rank = row_number()) |>
-    ungroup()
+    ungroup() |>
+    mutate(
+      ci_lo = estimate - 1.96 * std_error,
+      ci_hi = estimate + 1.96 * std_error
+    )
+
+  # Per-facet sample-size annotation (only shown when n < 1000)
+  annot_df <- summary_df |>
+    group_by(subtype, region) |>
+    summarise(
+      draw_n   = unique(n)[1],
+      pool_n   = round(unique(n)[1] / 0.6),
+      .groups  = "drop"
+    ) |>
+    filter(draw_n < 1000) |>
+    mutate(label = paste0("n per draw = ", draw_n,
+                          "\n(60% of ", pool_n, ")"))
 
   p_summary <- ggplot(summary_df,
                       aes(x = rank, y = estimate, colour = sig)) +
     geom_hline(yintercept = 0, linetype = "dashed",
                colour = "grey50", linewidth = 0.4) +
+    geom_linerange(aes(ymin = ci_lo, ymax = ci_hi),
+                   linewidth = 0.3, alpha = 0.4) +
     geom_point(size = 0.8, alpha = 0.7) +
+    geom_text(data = annot_df,
+              aes(label = label),
+              x = -Inf, y = Inf,
+              hjust = -0.07, vjust = 1.3,
+              inherit.aes = FALSE,
+              size = 2.8, colour = "grey30") +
     scale_colour_manual(name = "p (raw)", values = SIG_COLOURS) +
     facet_grid(subtype ~ region) +
     labs(
-      title    = "Jackknife robustness: temperature effect on NS substitution rates",
-      subtitle = paste0(
-        length(unique(summary_df$sample_id)), " subsamples of ",
-        unique(summary_df$n)[1], " sequences each"
-      ),
-      x = "Sample (ordered by estimate)",
-      y = "Estimate (scaled_temp)"
+      title = "Jackknife robustness: temperature effect on NS substitution rates",
+      x     = "Sample (ordered by estimate)",
+      y     = "Estimate (scaled_temp)"
     ) +
     theme_bw(base_size = 11) +
     theme(

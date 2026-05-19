@@ -113,6 +113,10 @@ res_main <- read_csv(
                        "white")
   )
 
+r2_forest <- res_main |>
+  distinct(gene, subtype, protein, r.squared) |>
+  mutate(r2_label = sprintf("%.2f", r.squared))
+
 dodge <- position_dodge(width = 0.5)
 
 forest_labels <- data.frame(subtype = c("H1N1", "H3N2"))
@@ -130,6 +134,10 @@ p_forest <- ggplot(res_main,
             aes(x = -Inf, y = Inf, label = subtype),
             hjust = -0.1, vjust = 1.4, inherit.aes = FALSE,
             size = (BS - 1) / .pt, colour = "grey20", fontface = "bold") +
+  geom_text(data = r2_forest,
+            aes(x = 0.05, y = protein, label = r2_label),
+            hjust = 0, inherit.aes = FALSE,
+            size = (BS - 2) / .pt, colour = "grey40") +
   scale_colour_manual(values = PRED_COLOURS, name = NULL) +
   scale_fill_identity() +
   scale_y_discrete(limits = rev) +
@@ -232,6 +240,10 @@ ml_combined <- bind_rows(ml_main, ml_ns) |>
 TYPE_COLOURS <- setNames(viridis(3, end = 0.85),
                          c("Substitution\nrate", "Non-synonymous\nrate", "Synonymous\nrate"))
 
+r2_ml <- ml_combined |>
+  distinct(subtype, region, r.squared) |>
+  mutate(r2_label = sprintf("%.2f", r.squared))
+
 ml_labels <- data.frame(subtype = c("H1N1", "H3N2"))
 
 p_multilevel <- ggplot(ml_combined,
@@ -247,6 +259,10 @@ p_multilevel <- ggplot(ml_combined,
             aes(x = -Inf, y = Inf, label = subtype),
             hjust = -0.1, vjust = 1.4, inherit.aes = FALSE,
             size = (BS - 1) / .pt, colour = "grey20", fontface = "bold") +
+  geom_text(data = r2_ml,
+            aes(x = 0.05, y = region, label = r2_label),
+            hjust = 0, inherit.aes = FALSE,
+            size = (BS - 2) / .pt, colour = "grey40") +
   scale_colour_manual(values = TYPE_COLOURS, name = NULL) +
   scale_fill_identity() +
   scale_y_discrete(limits = rev, expand = expansion(add = 0.4)) +
@@ -260,7 +276,7 @@ p_multilevel <- ggplot(ml_combined,
   common_theme +
   theme(legend.position    = "none",
         panel.grid.major.x = element_blank(),
-        aspect.ratio       = 0.5,
+        aspect.ratio       = 0.65,
         strip.text         = element_blank(),
         strip.background   = element_blank())
 

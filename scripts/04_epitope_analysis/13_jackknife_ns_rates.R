@@ -27,8 +27,9 @@ suppressPackageStartupMessages({
 
 source(here("config.R"))
 
-N_SAMPLES   <- 1000L
-SAMPLE_SIZE <- 1000L
+N_SAMPLES        <- 1000L
+SAMPLE_FRACTION  <- 0.6   # sample this fraction of available sequences
+SAMPLE_SIZE_MAX  <- 1000L # hard cap
 
 # Per-region seeds — offset from 42 so each region gives different samples
 REGION_SEEDS <- c(full = 42L, HA2 = 43L, epitope = 44L, ridge = 45L)
@@ -71,7 +72,7 @@ for (gene in genes) {
       next
     }
 
-    message("\n", tag, " Jackknife (", N_SAMPLES, " × ", SAMPLE_SIZE, " sequences)...")
+    message("\n", tag, " Jackknife (", N_SAMPLES, " × up to ", SAMPLE_SIZE_MAX, " sequences)...")
 
     sub_df <- df |>
       filter(!is.na(scaled_temp), !is.na(.data[[response]])) |>
@@ -80,15 +81,13 @@ for (gene in genes) {
     rownames(sub_df) <- sub_df$accession
 
     n_avail     <- nrow(sub_df)
-    actual_size <- min(SAMPLE_SIZE, n_avail)
-    message("  ", n_avail, " taxa available; sampling ", actual_size)
+    actual_size <- min(SAMPLE_SIZE_MAX, floor(SAMPLE_FRACTION * n_avail))
+    message("  ", n_avail, " taxa available; sampling ", actual_size,
+            " (", round(100 * actual_size / n_avail), "% of pool)")
 
     if (n_avail < 10) {
       warning(tag, " Too few taxa for jackknife, skipping")
       next
-    }
-    if (actual_size < SAMPLE_SIZE) {
-      warning(tag, " Only ", n_avail, " sequences available; sampling all")
     }
 
     set.seed(REGION_SEEDS[[region]])
