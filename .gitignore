@@ -56,3 +56,6 @@ archive/
 paper/old_paper.docx
 paper/old_paper.pdf
 paper/old_paper_supp.pdf
+
+# Journal targets (personal notes, not for repo)
+paper/journal_targets.*
