@@ -86,186 +86,39 @@ Our results showed a significant negative association between hemagglutinin evol
 
 \section*{Methods}
 
-\subsection*{Sequence data}
-\begin{itemize}
-  \item Sequences of HA (H1, H3), NA (N1, N2), and PA (PA\_H1N1, PA\_H3N2)
-        were downloaded from GISAID EpiFlu for collection dates 2009--2019.
-        \textcolor{noteblue}{[REF: GISAID]}
-  \item \textit{[N per gene table: raw N before processing $=$ \textbf{[X\_raw]}; final N
-        retained after deduplication, metadata filtering, and tree pruning $=$
-        \textbf{[X\_final]}. Fill once pipeline finalised.]}
-  \item Metadata retained: collection date (month resolution), collection
-        location (country/region string). Split FASTAs were merged and metadata
-        parsed with \texttt{scripts/00\_metadata/00\_parse\_gisaid.R}.
-\end{itemize}
+This analysis used a global sample of HA, NA and PA from H1N1 and H3N2 subtypes, collected between 2009-2019. Originally passaged sequences matching this criteria were obtained from GISAID EpiFlu along with their metadata detailing their location and collection date (\cite{shu_gisaid_2017}). Location strings found in the metadata were geocoded to latitude and longitude via Nominatim (OpenStreetMap) (\cite{noauthor_architecture_nodate, noauthor_openstreetmap_nodate}) with a hierarchical fallback to coarser geographic levels. For each date and location, a monthly mean temperature(2-m air) and 2-m dewpoint temperature was fetched from the Copernicus Climate Data Store at a $~0.1^\circ$ spatial resolution (\cite{noauthor_era5_nodate}). Relative humidity was derived from temperature and dewpoint using the Magnus formula. $\Delta\text{T}$ and $\Delta\text{RH}$ were computed as the difference between the collection month and the preceding month at the same location. Population density was extracted from the Global Human Settlement Layer (GHSL R2023A, 100m resolution, Mollweide projection) at the geocoded sample coordinates with the GHSL epoch (2010/2015/2020) matched to the sample collection year (\cite{pesaresi_advances_2024}). To control for uneven global surveillance effort, sampling density was computed as the count of sequences in the dataset sharing the same location and collection year and month. 
 
-\subsection*{Climate and demographic data}
-\begin{itemize}
-  \item Location strings were geocoded to latitude/longitude via Nominatim
-        (OpenStreetMap) with hierarchical fallback to coarser geographic levels;
-        results cached in \texttt{data/raw/location\_coords\_cache.csv}.
-        \textcolor{noteblue}{[REF: Nominatim / OpenStreetMap]}
-  \item ERA5-Land monthly means were fetched from the Copernicus Climate Data
-        Store for the sample location and collection month: 2-m air temperature
-        and 2-m dewpoint temperature at $\sim$0.1$^\circ$ spatial resolution.
-        \textcolor{noteblue}{[REF: ERA5-Land / Copernicus CDS --- old paper ref 41]}
-  \item Relative humidity was derived from temperature and dewpoint using the
-        Magnus formula; all temperature values converted from Kelvin to Celsius.
-        \textcolor{noteblue}{[REF: Magnus formula]}
-  \item Seasonal temperature and humidity anomalies ($\Delta$T, $\Delta$RH) were
-        computed as the difference between the collection month and the preceding
-        calendar month at the same location.
-  \item Population density was extracted from the Global Human Settlement Layer
-        (GHSL R2023A, 100\,m resolution, Mollweide projection) at the geocoded
-        sample coordinates, with the GHSL epoch (2010/2015/2020) matched to
-        the sample collection year.
-        \textcolor{noteblue}{[REF: GHSL --- Schiavina et al.\ or JRC technical report; check GHSL\_Data\_Package\_2023.pdf]}
-  \item Sampling density was computed as the count of sequences in the final
-        dataset sharing the same location (latitude/longitude) and
-        collection year--month; this variable was included to control for
-        uneven global surveillance effort.
-\end{itemize}
+Sequences were aligned using MAFFT (\cite{katoh_mafft_2013}) and alignment columns with $>$50\% gaps were removed. Duplicated sequences were removed (Table \ref{tab:sequences}).  An initial maximum likelihood phylogeny was inferred with MAPLE v0.6.8 (\textcolor{red}{verify}) (\cite{de_maio_maximum_2022}) and time-calibrated with TreeTime using a relaxed clock and collection dates as calibrations (\cite{sagulenko_treetime_2018}). Sequences identified as clock outliers by TreeTime were excluded and a second MAPLE tree was inferred with the clock-filtered sequence set. The second round MAPLE tree was then time-calibrated with TreeTime once again, using the same relaxed clock. 
 
-\subsection*{Sequence alignment and phylogenetics}
-\begin{itemize}
-  \item Sequences were aligned with MAFFT; alignment columns with $>$50\%
-        gaps were removed.
-        \textcolor{noteblue}{[REF: MAFFT]}
-  \item An initial maximum-likelihood phylogeny was inferred with
-        MAPLE v0.6.8 (round~1). Terminal branches shorter than the minimum
-        threshold ($\geq 0$\,substitutions/site) were pruned to remove
-        near-identical duplicate sequences.
-        \textcolor{noteblue}{[REF: MAPLE --- old paper ref 45]}
-  \item The round-1 tree was time-calibrated with TreeTime
-        (relaxed clock, \texttt{--relax 1.0 0.0}) using collection dates as
-        calibrations. Sequences identified as clock outliers by TreeTime were
-        excluded.
-        \textcolor{noteblue}{[REF: TreeTime --- old paper ref 46]}
-  \item A second MAPLE tree (round~2) was inferred from the clock-filtered
-        sequence set. Outlier long branches were pruned using a robust
-        MAD-based criterion on log-transformed branch lengths: a tip was
-        removed if $\log(\ell) > \mathrm{median}(\log \ell) +
-        4 \times \mathrm{MAD}(\log \ell)$.
-  \item The final canonical timetree was produced by running TreeTime
-        (relaxed clock) on the round-2 pruned tree, yielding branch lengths
-        in both years (timetree) and substitutions/site (divergence tree).
-  \item The per-sample overall evolutionary rate was defined as the terminal
-        branch length in substitutions/site divided by the corresponding
-        terminal branch duration in years.
-  \item The degree of phylogenetic signal in log evolutionary rate was
-        quantified by estimating Pagel's $\lambda$ via maximum likelihood using
-        \texttt{phytools::phylosig}, with a likelihood-ratio test against
-        $\lambda = 0$.
-\end{itemize}
 
-\subsection*{dN/dS estimation on the whole gene and subregions}
+\begin{table}
+    \centering
+\caption{Number of sequences throughout the pipeline}
+\label{tab:sequences}
+    \begin{tabular}{cccccl}\toprule
+         &  GISAID EpiFlu N&  After deduplication&  MAPLE tree round 2& Final &Retained [\%]\\\midrule
+         H1&  17,519&  10,918&  10,913&  9,329&53.2\%\\
+         N1&  18,225&  9,579&  9,571&  8,163&44.8\%\\
+         PA (H1N1)&  14,289&  8,821&  8,819&  7,534&52.7\%\\
+         H3&  25,594&  15,002&  15,000&  12,800&50.0\%\\
+         N2&  25,586&  13,054&  13,053&  11,140&43.5\%\\
+         PA (H3N2)&  22,407&  12,892&  12,890&  11,035&49.2\%\\ \bottomrule
+    \end{tabular}
+    
+    
+\end{table}
 
-\paragraph{Whole gene.}
-\begin{itemize}
-  \item Pairwise synonymous ($d_\mathrm{S}$) and non-synonymous ($d_\mathrm{N}$)
-        distances were estimated for all sequence pairs using yn00 (PAML;
-        Yang \& Nielsen 2000) with F3$\times$4 codon frequencies and the
-        standard genetic code; codon columns containing stop codons or gaps
-        were removed prior to each pairwise calculation.
-        \textcolor{noteblue}{[REF: PAML/yn00 --- Yang \& Nielsen 2000]}
-  \item Per-sample mean $d_\mathrm{N}$ and $d_\mathrm{S}$ were computed as row
-        means of the pairwise distance matrices; $\omega = d_\mathrm{N} /
-        d_\mathrm{S}$ was used as a secondary response variable in the
-        phylogenetic regression alongside the overall substitution rate.
-  \item Samples with numerically unstable rates (log rate $< -8$) were
-        excluded.
-\end{itemize}
+Pairwise synonymous ($d_\text{S}$) and non-synonymous ($d_\text{N}$) distances were estimated for all sequence pairs using yn00 (\cite{yang_estimating_2000}) implemented in PAML using F3$\times$4 codon frequencies and the standard genetic code. Codon columns containing stop codons or gaps were removed prior to each pairwise calculation. Per-sample mean $d_\text{N}$ and $d_\text{S}$ were computed as row means of the pairwise distance matrices. Samples with numerically unstable rates (log rate $< -$8) were removed (Table \ref{tab:sequences}, column 'Final'). 
 
-\paragraph{Antigenic subregions.}
-\begin{itemize}
-  \item Most of the HA gene is under purifying selection; adaptive evolution
-        is concentrated in the antigenic surface. We therefore analysed
-        substitution rates separately for the antigenic ridge, the broader
-        epitope regions, and the HA2 stalk (used as a subregion negative
-        control).
-  \item Epitope site definitions: H3, sites A--E (Wilson \& Cox 1990; Koel
-        et al.\ 2013) with a 7-position antigenic ridge (residues 145, 155,
-        156, 158, 159, 189, 193); H1, sites Sa/Sb/Ca1/Ca2/Cb (Caton et al.\
-        1982; Xu et al.\ 2010) with a 7-position ridge (residues 133, 137,
-        138, 140, 141, 156, 157).
-        \textcolor{noteblue}{[REF: Wilson \& Cox 1990; Koel et al.\ 2013; Caton et al.\ 1982; Xu et al.\ 2010]}
-  \item Reference sequences (H3: A/Aichi/2/1968 CY121680; H1:
-        A/Puerto Rico/8/1934 CY009444) were added temporarily to the full
-        alignment using \texttt{MAFFT --add --keeplength} to map mature-protein
-        residue positions to alignment columns, accounting for signal-peptide
-        length (H3: 16\,aa; H1: 17\,aa). Sub-alignments for each region were
-        then extracted from the full MAFFT alignment.
-  \item For each tip, the ancestral codon at each position was inferred by
-        maximum parsimony (\texttt{phangorn::ancestral.pars}); the tip codon
-        was compared to its inferred ancestor and classified as synonymous
-        (same amino acid, $S=1$) or non-synonymous (amino acid change,
-        $\mathrm{NS}=1$). Stop codons, gaps, and ambiguous bases were excluded.
-        The per-tip non-synonymous substitution rate was $\mathrm{NS\_rate} =
-        \mathrm{NS\_count} / t_\mathrm{branch}$, log-transformed for regression.
-        \textcolor{noteblue}{[REF: phangorn]}
-  \item Recurrent non-synonymous mutations (independent occurrences $> 5$)
-        were tested for association with each climate variable using the
-        Wilcoxon rank-sum test. Effect size was quantified as the
-        rank-biserial correlation:
-        \[
-          r = \frac{2W}{n_1 n_2} - 1
-        \]
-        where $W$ is the Mann--Whitney $U$ statistic and $n_1$, $n_2$ are the
-        counts of sequences with and without the mutation. Benjamini--Hochberg
-        FDR correction was applied within each gene $\times$ region.
-\end{itemize}
+To account for concentration of adaptive evolution of hemagglutinin in the antigenic surface sites (\textcolor{red}{insert citation}), the rate of non-synonymous change was analysed separately for the antigenic ridge, the broader epitope regions and the HA2 stalk region, used to infer whether the antigenic regions were driving the signal across the whole gene.  H1 sequence A/Puerto Rico/8/1934 CY009444 (\textcolor{red}{citation}) and H3 sequence A/Aichi/2/1968 CY12168 (\textcolor{red}{citation}) were used as references to map the positions of gene subregions (\textcolor{red}{Supp figure: gene maps}), which were then extracted from the full MAFFT alignment. For each tip, the ancestral codon at each position was inferred by maximum parsimony using phangorn (\cite{schliep_phangorn_2011}).  The tip codon was then compared to its inferred ancestor and classified as synonymous or non-synonymous. (\textcolor{red}{mention why we didn't use yn00 for this}). Stop codons, gaps, and ambiguous bases were excluded. The per-tip non-synonymous rate was calculated by dividing the count of non-synonymous changes with the time of the branch (\textcolor{red}{phrase this better}). Sequences not containing a non-synonymous change in the region undergoing analyses were removed. (\textcolor{red}{maybe have another table showing that}) 
 
-\subsection*{Phylogenetic comparative regression}
-\begin{itemize}
-  \item Phylogenetic linear models were fitted with \texttt{phylolm}
-        (Pagel's $\lambda$ covariance); $\lambda$ was estimated during
-        regression and quantifies the degree to which residuals follow a
-        Brownian motion process ($\lambda = 0$: phylogenetically independent;
-        $\lambda = 1$: full Brownian motion).
-        \textcolor{noteblue}{[REF: phylolm --- old paper ref 52]}
-  \item Response variables: (1) log overall evolutionary rate;
-        (2) log $\omega$ ($d_\mathrm{N}/d_\mathrm{S}$); (3) log
-        non-synonymous substitution rate per subregion (antigenic ridge,
-        epitope, HA2).
-  \item Predictors (all $z$-score scaled):
-        \begin{itemize}
-          \item Temperature (ERA5-Land monthly mean 2-m temperature, $^\circ$C)
-          \item Relative humidity (\%)
-          \item $\Delta$-temperature (current month minus preceding month)
-          \item $\Delta$-humidity (current month minus preceding month)
-          \item Sampling density (log-transformed count of sequences at the
-                same location and collection year--month)
-          \item Population density (log-transformed GHSL value)
-          \item Collection year (factor; controls for secular trends; excluded
-                from FDR correction)
-        \end{itemize}
-  \item Analyses were run independently per gene segment
-        (H1, H3, N1, N2, PA\_H1N1, PA\_H3N2). PA segments serve as negative
-        controls: a climate signal absent from PA but present in HA/NA
-        strengthens inference of a surface-protein-specific effect.
-  \item Multiple testing correction: Benjamini--Hochberg FDR was applied
-        across all predictor terms, genes, and response variables jointly
-        (excluding the year factor). Associations with $p_\mathrm{FDR} < 0.05$
-        were considered significant.
-\end{itemize}
+Phylogenetic linear models were fitted with phylolm (\cite{ho_phylolm_2020}) while estimating Pagel's  $\lambda$
+covariance. Analyses on the whole gene included two response variables: log overall evolutionary rate and log $\omega$, defined as  $\omega = d_\text{N} / d_\text{S}$. Analyses on the gene subregions used log non-synonymous substitution rate per subregion (antigenic ridge, epitope, HA2). Predictors used in all analyses were temperature [$^\circ$C], relative humidity [\%], $\Delta$-temperature, $\Delta$-humidity, sampling density (log-transformed), population density (log-transformed) and collection year as factor, controlling for secular trends. All phylolm results underwent Benjamini-Hochberg FDR corrections and associations with $p_\text{FDR} < 0.05$ were considered significant. 
 
-\subsection*{Block jackknife sensitivity analysis}
-\begin{itemize}
-  \item To assess whether the temperature association was robust to
-        subsampling, a block jackknife was performed: 1000 year-stratified
-        random subsamples of 60\% of sequences (capped at 1000 sequences)
-        were drawn; the tree was pruned to each subsample and
-        \texttt{phylolm} refitted.
-  \item The jackknife model used a reduced formula
-        (\texttt{log\_rate} $\sim$ \texttt{scaled\_temp} $+$
-        \texttt{as.factor(year)}) to isolate the temperature coefficient
-        under reduced statistical power without multicollinearity from the
-        remaining predictors.
-  \item The distribution of temperature coefficients across the 1000
-        subsamples, and the proportion reaching nominal significance
-        ($p < 0.05$), were used to confirm that the full-model signal was
-        not driven by any single sequence or temporal cluster.
-\end{itemize}
+Recurrent non-synonymous mutations (independent occurrences $>$ 5) were tested for association with each climate variable using the Wilcoxon rank-sum test. The effect size was quantified as the rank-biserial correlation. Benjamini-Hochberg FDR correction was applied within each gene and region. 
+
+To asses whether the temperature association was robust to subsampling, a block jackknife was performed: 1000 year-stratified random subsamples of 1000 sequences (or, in the subregion cases, where N dropped below 1000, at 60\% of N) were drawn. The tree was pruned to each subsample and phylolm was refitted using a reduced formula where log substitution rate or non-synonymous rate (in the case of subregion analyses) was used as a response variable and scaled temperature and collection year as factor were used as predictors. The distribution of temperature coefficients across the 1000 subsamples, and the proportion reaching $p<0.05$ were used to confirm that the full-model signal was not driven by any sequence or temporal cluster. 
+
 
 \newpage
 
