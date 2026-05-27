@@ -7,6 +7,43 @@
 
 \articletype{Research Article}
 
+%% Significance statement box — copied from pnasresearcharticle.sty
+%% (needed because we are not loading that file)
+\RequirePackage{float}
+\floatstyle{plain}
+\newfloat{sigstatement}{tp!}{sst}
+\newfloat{sigstatements}{bp!}{sst}
+
+\additionalelement{%
+\afterpage{\begin{sigstatement}
+\sffamily
+\mdfdefinestyle{pnassigstyle}{backgroundcolor=pnasblueback,linecolor=pnasblueback,
+  fontcolor=pnasbluetext,innertopmargin=9.3pt,innerrightmargin=11.4pt,
+  innerbottommargin=12pt,innerleftmargin=11.4pt,linewidth=0pt,userdefinedwidth=157pt}
+\@ifundefined{@significancestatement}{}{%
+  \begin{mdframed}[style=pnassigstyle]%
+  \section*{\textcolor{pantone}{Significance}}%
+  \raggedright\fontsize{8.5}{12}\selectfont\textcolor{black}\@significancestatement
+  \end{mdframed}}
+\end{sigstatement}
+\begin{sigstatements}
+\sffamily
+\mdfdefinestyle{pnassigstyle}{linewidth=0pt,innertopmargin=0pt,innerrightmargin=0pt,
+  innerbottommargin=-30pt,innerleftmargin=0pt,userdefinedwidth=157pt}
+\begin{mdframed}[style=pnassigstyle]\scriptsize
+\if!\AB@affillist!\else Author affiliations: \AB@affillist\par\vskip11.7pt
+\hrule width 157pt height.5pt\par\vskip13.5pt\fi
+\@ifundefined{@authorcontributions}{\vskip-3pt}{\@authorcontributions}
+\vskip3pt
+\@ifundefined{@authordeclaration}{\vskip-3pt}{\@authordeclaration}
+\vskip3pt
+\@ifundefined{@equalauthors}{\vskip-3pt}{\@equalauthors}
+\vskip3pt
+\@ifundefined{@correspondingauthor}{\vskip-3pt}{\@correspondingauthor}
+\end{mdframed}\vskip-6pt
+\end{sigstatements}\clearpage
+}}
+
 \graphicspath{{figures/}}
 
 \usepackage{amsmath}
@@ -455,6 +492,9 @@ cluster.
 \acknow{The authors thank \textcolor{red}{[acknowledgements]}.
 Influenza sequence data were obtained from the GISAID EpiFlu database;
 we gratefully acknowledge the originating and submitting laboratories.}
+
+\showmatmethods
+\showacknow
 
 \bibliographystyle{pnas-new}
 \bibliography{references}
