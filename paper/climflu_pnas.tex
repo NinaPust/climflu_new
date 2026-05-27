@@ -1,7 +1,12 @@
 \documentclass{pnas-new}
-\templatetype{pnasresearcharticle}
 
-%% PNAS_Logo.pdf and class files live in PNAS_guidelines/
+%% Manually set layout booleans instead of loading pnasresearcharticle.sty,
+%% which triggers a broken first-page column macro producing "y 0" artifacts.
+\setboolean{shortarticle}{false}  % abstract spans full width
+\setboolean{singlecolumn}{false}  % two-column body
+
+\articletype{Research Article}
+
 \graphicspath{{figures/}}
 
 \usepackage{amsmath}
@@ -13,7 +18,7 @@
 
 \author[1]{Nina Pust}
 
-\affil[1]{Department of Veterinary and Animal Sciences, University of Copenhagen, Copenhagen, Denmark}
+\affil[1]{Department of Public Health, University of Copenhagen, Copenhagen, Denmark}
 
 \leadauthor{Pust}
 
@@ -450,8 +455,6 @@ cluster.
 \acknow{The authors thank \textcolor{red}{[acknowledgements]}.
 Influenza sequence data were obtained from the GISAID EpiFlu database;
 we gratefully acknowledge the originating and submitting laboratories.}
-
-\bibsplit[3]
 
 \bibliographystyle{pnas-new}
 \bibliography{references}
