@@ -266,111 +266,25 @@ significance (Fig.~\ref{fig:mutations}, bottom row).
 % ─────────────────────────────────────────────────────────────────────────────
 \section*{Discussion}
 
-\begin{itemize}
+In a large global sample of influenza A H1N1 and H3N2 sequences, we reveal a robust negative association between local environmental temperature and haemagglutinin evolutionary rate — a finding that was robust to subsampling and consistent across both subtypes. Prior work established that cold, dry conditions enhance influenza transmission by prolonging infectious droplet survival in the air and increasing contact rates indoors (\cite{lowen_influenza_2007, frise_contact_2016}), but a direct link between ambient climate and the rate of molecular evolution of circulating strains had not been demonstrated at the global scale. Our findings provide the evidence suggesting that cold local climates act as accelerators of HA evolution. 
 
-    \item \textbf{Restate the core finding and its novelty.}
-    Open by briefly summarising what was found: a significant negative
-    association between local temperature and HA substitution rate in both
-    H1N1 and H3N2, robust to subsampling, not driven by any single sequence
-    or outbreak cluster. Situate this in the literature — prior work has
-    linked climate to influenza \emph{transmission}, but direct evidence
-    linking ambient conditions to evolutionary rate in a global dataset is
-    limited. This is the contribution.
+This result is consistent with several converging biological mechanisms. Cold and dry conditions reduce mucociliary transport velocity (\cite{kelly_rapid_2021, kilgour_mucociliary_2004}) and lower airway surface liquid pH (\cite{kudo_low_2019}), prolonging the window of extracellular exposure during which virions must resist inactivation before reaching the respiratory epithelium. HA activation is strongly pH-dependent: variants that activate at lower pH thresholds are more stable in mildly acidic extracellular environments, conferring a selective transmission advantage (\cite{russier_molecular_2016, singanayagam_influenza_2019}), while excessive acidification can prematurely trigger HA and render virions non-infectious (\cite{tosheva_hemagglutinin_2023}) — suggesting the airway surface environment actively filters the viral population for pH-stable variants. Concurrently, cold and dry conditions prolong aerosol persistence and impair innate antiviral defences (\cite{lowen_influenza_2007, kudo_low_2019})— which, in combination with reduced mucociliary clearance, widens the effective transmission bottleneck (\cite{sobel_leonard_transmission_2017}), allowing a larger proportion of within-host viral diversity to be transmitted. Together, these conditions expose a larger effective viral population to selection at each transmission event, plausibly elevating the observed substitution rate at the population level without any change in the per-replication error rate.
 
-    \item \textbf{Interpret the direction: cold $\rightarrow$ faster
-    evolution.} Discuss that the direction is consistent with the
-    well-established winter-season dominance in temperate regions. Cold
-    conditions are associated with drier indoor air, longer outdoor aerosol
-    persistence, reduced mucociliary clearance, and potentially lower airway
-    pH — all of which may extend the transmission bottleneck window and
-    expose a larger within-host viral population to selection. Faster
-    replication cycles or larger effective population sizes at transmission
-    could manifest as an elevated substitution rate at the population level
-    even without a change in per-replication error rate.
+The temperature signal is specific to haemagglutinin and absent in neuraminidase and the internal control gene PA, a pattern that warrants explanation. HA is the primary target of neutralising antibody responses and evolves under the strongest immune-driven positive selection of any influenza gene (\cite{bush_positive_1999, nelson_evolution_2007}), meaning it has the greatest capacity to accumulate variation that is not immediately purged by purifying selection. This high baseline rate may make HA the most sensitive indicator of any climate-linked increase in mutational supply: the same absolute increase in within-host diversity passed across a transmission bottleneck would produce a detectable rate shift in HA while remaining below the noise threshold in a slower-evolving gene. Beyond this statistical argument, HA faces a qualitatively different selective environment from NA. Virions must traverse the mucosal surface and resist extracellular inactivation before cell entry — exposing HA to selection pressures mediated directly by airway temperature, pH, and mucus viscosity, the very conditions modulated by local climate. NA, by contrast, mediates virion release from already-infected cells and receptor cleavage to prevent self-aggregation (\cite{guo_kinetic_2018}) — a function buffered by the intracellular and membrane-proximal environment rather than the extracellular milieu. The HA–NA functional balance (\cite{guo_kinetic_2018}) may additionally constrain NA's freedom to drift: as HA evolves under climate-associated pressure, compensatory epistatic changes in NA would suppress its net substitution rate rather than elevate it. The PA null result confirms that the pipeline is not generating spurious climate associations in slowly evolving genes, and that the NA null result is biologically interpretable rather than a power failure — NA sample sizes are comparable to HA throughout. One important caveat is that we cannot rule out a simpler explanation: HA has the highest absolute evolutionary rate in this dataset, and a proportionally small climate effect may simply be easier to detect against a fast-moving background. Distinguishing these explanations would require within-subtype analyses stratified by evolutionary rate, which we leave as a direction for future work.
 
-    \item \textbf{Why both $d_\text{N}$ and $d_\text{S}$? Mutational rate,
-    not altered selection.} The lack of a differential effect on $\omega$
-    ($d_\text{N}/d_\text{S}$) and the fact that the signal persists in
-    synonymous as well as non-synonymous rates suggests that temperature is
-    modulating the overall rate of molecular change rather than the
-    \emph{type} of change. A plausible interpretation is that colder, drier
-    conditions lead to larger within-host population sizes or more
-    replication rounds per transmission chain, generating more raw
-    mutations — both synonymous and non-synonymous — without specifically
-    enriching for adaptive change. This interpretation is also consistent
-    with the mutation-frequency analysis showing no specific amino acid
-    substitution enriched in colder climates.
+The temperature association is nominally significant in both subtypes, but reaches significance more consistently in H1N1 than H3N2 across subregion analyses and jackknife resamples. This likely reflects differences in tree topology rather than a fundamental biological distinction: post-pandemic H1N1 phylogenies are characterised by a ladder-like, funnel topology with limited clade diversification, while H3N2 maintains several antigenically distinct co-circulating clades (Supplementary Figure X). The between-clade rate heterogeneity in H3N2 dilutes a climate signal that is presumably distributed evenly across lineages, reducing statistical sensitivity without implying the effect is absent. The consistency of sign across both subtypes supports a shared underlying mechanism; the difference in robustness is an artefact of tree structure.
 
-    \item \textbf{Why HA and not NA or PA?} HA is the primary target of
-    humoral immunity and is under strong immune-driven positive selection,
-    meaning it has the most headroom for variation. Possible explanations:
-    (1) HA faces direct extracellular selection pressure (pH, mucus,
-    antibody) that amplifies any climate-induced change in mutational supply;
-    (2) NA evolves under different immune and functional constraints and may
-    be subject to epistatic coupling with HA that buffers its rate; (3) the
-    PA negative-control result confirms the pipeline is not generating
-    spurious signals, and the NA null result is biologically informative
-    rather than a power failure (NA sample sizes are comparable). Worth
-    briefly considering whether the HA--climate link is HA-specific or just
-    a consequence of HA evolving fastest overall, making small
-    climate-linked differences easier to detect.
+The negative direction of the temperature association is consistent with well-established patterns of influenza seasonality and can be understood through several converging mechanisms that collectively increase the quantity of viral diversity transmitted under cold conditions. Cold and dry air prolongs infectious aerosol survival (\cite{lowen_influenza_2007, shaman_absolute_2009}), increasing transmission frequency and the size of the exposed viral population. Cold temperatures additionally extend the duration of peak viral shedding (\cite{lowen_influenza_2007}) and impair innate antiviral defences in the nasal epithelium (\cite{huang_cold_2023, kudo_low_2019}), promoting more severe and prolonged infections. More severe donor infections, in turn, are associated with a wider transmission bottleneck — more virions transferred per transmission event (\cite{sobel_leonard_transmission_2017, frise_contact_2016} — meaning a larger fraction of within-host viral diversity survives to seed the next infection. The cumulative effect of more frequent transmission events, longer infectious periods, and wider bottlenecks is an increase in the number of replication rounds per transmission chain, and therefore in the number of mutations that accumulate before the lineage is sampled. Critically, this interpretation implies that cold climate elevates the quantity of molecular change rather than its character — consistent with the absence of a temperature effect on $\omega$ in our data, and with the established view that per-replication error rate is an intrinsic property of the viral RdRp, determined by the intracellular biochemical environment rather than ambient conditions (\cite{partlow_influenza_2025}).
 
-    \item \textbf{Why H1 more robustly than H3?} The subregion analyses and
-    jackknife reach significance more consistently in H1N1 than H3N2.
-    Possible explanations: H3 HA is generally considered more antigenically
-    variable and may evolve under stronger immune-driven directional
-    selection that swamps a subtler climate signal; alternatively, H3N2
-    sampling is more geographically concentrated in certain years, potentially
-    introducing confounders. The fact that the full-dataset association is
-    nominally significant in both subtypes but the subregion analyses lose
-    power in H3 is consistent with the signal being genuine but noisier.
+Temperature predicts the overall substitution rate of HA but has no detectable effect on $\omega$, indicating that cold climate increases the quantity of molecular change without altering the balance between positive and purifying selection. This pattern is most parsimoniously explained through the lens of effective population size. The effective population size of influenza A at transmission — the number of independently contributing viral lineages that found a new infection — has been estimated at approximately 100–200 (\cite{poon_quantifying_2016}), far below the census count of virions within a host. Under cold conditions, the transmission bottleneck widens (\cite{sobel_leonard_transmission_2017, frise_contact_2016} ), meaning more of the donor's within-host diversity is passed to the recipient, increasing the founding Ne of each new infection. A higher founding Ne means more distinct variants replicate, accumulate further mutations, and are present at the time of sampling — producing longer terminal branches and a higher apparent substitution rate, without any change in polymerase fidelity or the selective pressures acting on the virus. Both synonymous and non-synonymous mutations benefit equally from this wider transmission filter, leaving $\omega$ unchanged. The following analysis of recurrent amino acid substitutions provides further evidence that cold climate acts as a rate accelerator rather than a selective force.
 
-    \item \textbf{What the recurrent-mutation analysis adds.} No specific
-    substitution is enriched in colder or drier climates, despite several
-    positions showing recurrent independent origins. This means climate is
-    not deterministically channelling HA toward particular antigenic
-    variants — it accelerates the overall clock without biasing the direction
-    of change. This implies that climate increases the chance that a novel
-    antigenic variant arises by chance, rather than directly selecting for
-    any one epitope configuration.
+Consistent with the absence of a temperature effect on $\omega$, analysis of recurrent non-synonymous substitutions in the antigenic ridge and epitope regions reveals no enrichment of any specific amino acid change in colder or drier climates, despite several positions showing multiple independent origins across the tree. This is consistent with the established view that antigenic evolution proceeds through discrete, immune-driven cluster transitions (\cite{smith_mapping_2004}) in which competing antigenic lineages are resolved by host population immunity rather than environmental conditions (\cite{strelkowa_clonal_2012}). Climate does not deterministically channel HA toward particular antigenic variants — it increases the supply of raw mutational diversity without biasing the direction of change. The practical implication is probabilistic: a higher substitution rate elevates the chance that an immune-escape variant arises in any given season, but cold climate acts as a rate modulator rather than a selective filter, a conclusion that converges with the dN/dS result above.
 
-    \item \textbf{Limitations.} (1) \emph{Ecological inference}: the climate
-    predictor is the monthly mean at the collection site, which approximates
-    conditions at transmission but not the within-host or indoor environment.
-    (2) \emph{Surveillance bias}: GISAID submissions are heavily concentrated
-    in North America, Europe, and East Asia — sampling density is included
-    as a covariate to partially address this, but residual bias cannot be
-    ruled out. (3) \emph{Temporal confounding}: collection year is controlled
-    as a factor, but long-term evolutionary trends within subtypes may not be
-    fully accounted for. (4) \emph{Population density}: included as a
-    covariate but limited by coarse spatial resolution and static 5-year
-    epochs.
+Several limitations of this study warrant consideration. Most fundamentally, the climate predictor is the monthly mean temperature and humidity at the sequence collection site — a reasonable approximation of the transmission environment but not a direct measure of the conditions experienced within the airway or household during infection. The mechanisms we propose, particularly bottleneck widening and impaired mucociliary clearance, operate at scales far below what ERA5 captures, and transmission dynamics are further shaped by household structure and social contact networks (\cite{cauchemez_role_2011}) that aggregate out entirely at the resolution of our data. Testing these mechanisms directly would require paired within-host deep-sequencing and microenvironmental data that are not available at the global scale. This is an inherent trade-off of working with global surveillance data: the geographic and temporal breadth that makes the climate signal detectable in the first place precludes the fine-grained resolution needed to verify the underlying mechanism. Global genomic surveillance datasets such as GISAID are also geographically uneven, with submissions heavily concentrated in North America, Europe, and East Asia — precisely the regions with the most pronounced winter temperature seasonality. This concentration could inflate the apparent climate signal or introduce geographic confounders that sampling density, included as a covariate, only partially addresses. Africa, South and Southeast Asia, and Latin America — regions with distinct climate profiles and high influenza burden — remain substantially underrepresented, and it is not yet known whether the temperature association we report holds in tropical or subtropical settings (\cite{kimura_decoding_2026}). Temporally, collection year is controlled as a fixed effect, but long-term within-subtype trends such as clade replacements may not be fully captured, particularly in H3N2 where clade turnover is rapid. Population density, derived from the GHSL at 5-year epochs, is a static proxy for what is in reality a dynamic driver of transmission; finer-resolution mobility data would be a meaningful improvement. Finally, reverse causality is unlikely — the climate predictor is contemporaneous with collection rather than prospective — but the absence of lagged climate variables means we cannot resolve whether the critical exposure window precedes sampling by days, weeks, or the length of a transmission chain.
 
-    \item \textbf{Broader implications and future directions.} If cold, dry
-    conditions accelerate HA evolution globally, regions undergoing climate
-    change may experience shifts in the geographic distribution of
-    evolutionary hotspots — potentially prolonging high-rate seasons in
-    regions where winters are becoming shorter, or creating new hotspots in
-    subtropical regions as humidity patterns shift. A logical extension of
-    this work would be to incorporate within-country climate variation,
-    lagged climate variables (reflecting the transmission chain prior to
-    collection), and host population immunity data.
+If cold local climates accelerate HA evolution, global climate change has the potential to reshape the geographic landscape of influenza evolutionary dynamics. Regions where winters are shortening may see reduced intensity of the temperature-driven rate signal, while subtropical regions experiencing shifts toward drier, cooler conditions could emerge as new evolutionary hotspots (\cite{baker_implications_2021}). Either scenario has direct implications for vaccine strain selection: faster antigenic evolution in particular regions or seasons increases the probability that the circulating strain diverges antigenically from the vaccine before the season peaks, reducing vaccine effectiveness. A logical extension of this work would incorporate lagged climate variables — reflecting the transmission chain in the weeks prior to sampling rather than the collection month alone — as well as within-country climate variation and longitudinal host immunity data, to better resolve the exposure window and disentangle climate effects from immune-driven selection. The value of integrating genomic data with rich demographic registers has been demonstrated compellingly at the national scale, where near-complete genomic sampling of SARS-CoV-2 in Denmark revealed age-, vaccination-, and geography-specific drivers of molecular evolution that would be invisible in a globally aggregated dataset (\cite{khurana_high-resolution_2024}). Extending similar data infrastructure to influenza surveillance globally would enable the kind of individual-level analysis needed to move from the ecological associations we report here toward mechanistic inference. Taken together, our findings underscore the value of globally sampled genomic surveillance for characterising the environmental drivers of pathogen evolution — and point toward a future in which climate projections and genomic epidemiology can be jointly used to anticipate where novel influenza variants are most likely to emerge. 
 
-\end{itemize}
-
-Our results showed a significant negative association between hemagglutinin
-evolution and temperature, regardless of mutation type ($d_\text{N}$,
-$d_\text{S}$) in both H1N1 and H3N2 subtypes. Additionally, analyses on
-different regions of the H1 gene showed that temperature impacts both
-highly evolving regions (epitope, ridge) and slower evolving regions
-(stalk). No particular type of mutation in the epitope or antigenic ridge
-was associated with climate variables in any of the subtypes. A sensitivity
-analysis showed that the signal persists even with a smaller sample size
-and is not driven by outlier sequences or particular outbreaks. We can
-therefore conclude that lower temperatures play a direct role in
-accelerating the rate of influenza A hemagglutinin evolution. No such
-effects were observed in NA genes or the negative control PA genes.
-
+Using a global sample of influenza A H1N1 and H3N2 sequences spanning a decade and two subtypes, we demonstrate a robust negative association between local environmental temperature and haemagglutinin evolutionary rate — an effect that is consistent in direction across subtypes, gene regions, and subsamples, and absent in neuraminidase and the internal control PA. The signal is one of rate, not character: cold climates accelerate HA's molecular clock without shifting the balance of selection, consistent with a mechanism of wider transmission bottlenecks and larger effective viral population sizes rather than altered polymerase fidelity or directional immune pressure. This establishes local climate as a modulator of influenza's evolutionary tempo — not a deterministic driver of antigenic novelty, but a condition that raises the probability of novel variant emergence by increasing the pace of molecular change. As climate patterns shift globally, so too may the geographic distribution of evolutionary hotspots, and the integration of genomic surveillance with environmental data offers a principled framework for anticipating where those hotspots will be.
 % ─────────────────────────────────────────────────────────────────────────────
 \begin{table}[bt]
 \caption{Number of sequences throughout the pipeline}
