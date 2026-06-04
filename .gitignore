@@ -37,6 +37,13 @@ lnf
 
 # Exploratory / diagnostic scripts (not part of reproducible pipeline)
 scripts/00_metadata/00z_*.R
+
+# LaTeX build artefacts
+paper/manuscript_outline.aux
+paper/manuscript_outline.log
+paper/manuscript_outline.out
+paper/manuscript_outline.pdf
+paper/manuscript_outline.synctex.gz
 figures/metadata_diagnostics/
 scripts/02_phylogenetics/04z_test_*.R
 
