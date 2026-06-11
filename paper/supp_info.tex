@@ -8,6 +8,7 @@
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{longtable}
 
 \captionsetup{labelfont=bf, font=small}
 
@@ -83,23 +84,78 @@
 \end{figure}
 \newpage
 
-% ── Table example ─────────────────────────────────────────────────────────────
+\begin{table}[H]
+    \centering
+    \caption{Number of unique sequence pairs included in each phylogenetic regression analysis, for non-synonymous (NS) and synonymous (S) substitution rates across the full hemagglutinin gene and three subregions, in H1N1 and H3N2. Sample sizes differ between rate types within the same region because pairs with zero observed substitutions of a given type are excluded.}
+    \label{tab:s1}
+    \begin{tabular}{lcccc}
+        \toprule
+        & \textbf{Whole gene} & \textbf{HA2} & \textbf{Epitope} & \textbf{Antigenic ridge} \\
+        \midrule
+        H1 NS & 5{,}768 & 2{,}781 & 1{,}101 & 157 \\
+        H1 S  & 1{,}745 &   572 &   255 &  60 \\
+        H3 NS & 4{,}823 & 1{,}361 & 1{,}351 &  89 \\
+        H3 S  & 6{,}696 & 2{,}801 & 1{,}251 &  27 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\newpage
 
-    
-
-% \begin{table}[H]
-%     \centering
-%     \caption{Your caption here.}
-%     \label{tab:s1}
-%     \begin{tabular}{lcc}
-%         \toprule
-%         Column 1 & Column 2 & Column 3 \\
-%         \midrule
-%         A & 1 & 2 \\
-%         B & 3 & 4 \\
-%         \bottomrule
-%     \end{tabular}
-% \end{table}
-
+\begin{longtable}{llllrcc}
+    \caption{Nominally significant associations ($p < 0.05$, uncorrected) between recurrent hemagglutinin mutations and climate variables, ranked by subtype, region, and raw $p$-value. No association survives FDR correction. Effect size $r$ is the rank-biserial correlation between sequences carrying and not carrying the mutation. $p_{\text{FDR}}$ is the Benjamini--Hochberg adjusted $p$-value.}
+    \label{tab:s2} \\
+    \toprule
+    \textbf{Mutation} & \textbf{Subtype} & \textbf{Region} & \textbf{Predictor} & \textbf{\textit{r}} & \textbf{\textit{p}} & $\boldsymbol{p_{\text{FDR}}}$ \\
+    \midrule
+    \endfirsthead
+    \multicolumn{7}{l}{\small\textit{Table S2 continued}} \\
+    \toprule
+    \textbf{Mutation} & \textbf{Subtype} & \textbf{Region} & \textbf{Predictor} & \textbf{\textit{r}} & \textbf{\textit{p}} & $\boldsymbol{p_{\text{FDR}}}$ \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endlastfoot
+        T210I & H1N1 & Epitope & $\Delta$Temperature & 0.430 & 0.0072 & 0.682 \\
+        V140A & H1N1 & Epitope & $\Delta$Humidity & $-$0.342 & 0.0120 & 0.682 \\
+        D79N & H1N1 & Epitope & $\Delta$Humidity & $-$0.461 & 0.0166 & 0.682 \\
+        V126F & H1N1 & Epitope & $\Delta$Temperature & 0.482 & 0.0182 & 0.682 \\
+        G206E & H1N1 & Epitope & Relative humidity & $-$0.226 & 0.0193 & 0.682 \\
+        V140A & H1N1 & Epitope & Relative humidity & $-$0.313 & 0.0216 & 0.682 \\
+        T132I & H1N1 & Epitope & Relative humidity & $-$0.246 & 0.0218 & 0.682 \\
+        T162I & H1N1 & Epitope & $\Delta$Temperature & $-$0.276 & 0.0289 & 0.682 \\
+        V79I & H1N1 & Epitope & $\Delta$Temperature & 0.631 & 0.0289 & 0.682 \\
+        G206E & H1N1 & Epitope & Temperature & 0.210 & 0.0291 & 0.682 \\
+        R124K & H1N1 & Epitope & Relative humidity & 0.207 & 0.0395 & 0.682 \\
+        I160N & H1N1 & Epitope & $\Delta$Humidity & 0.195 & 0.0399 & 0.682 \\
+        L129P & H1N1 & Epitope & Temperature & 0.375 & 0.0402 & 0.682 \\
+        P168L & H1N1 & Epitope & Temperature & $-$0.344 & 0.0480 & 0.682 \\
+        R133L & H1N1 & Epitope & $\Delta$Temperature & $-$0.401 & 0.0499 & 0.682 \\
+        V140A & H1N1 & Ridge & $\Delta$Humidity & $-$0.342 & 0.0120 & 0.347 \\
+        V140A & H1N1 & Ridge & Relative humidity & $-$0.313 & 0.0217 & 0.347 \\
+        R133L & H1N1 & Ridge & $\Delta$Temperature & $-$0.400 & 0.0499 & 0.443 \\
+        H135R & H3N2 & Epitope & Temperature & $-$0.708 & 0.0027 & 0.734 \\
+        K224R & H3N2 & Epitope & $\Delta$Humidity & $-$0.502 & 0.0091 & 0.734 \\
+        P81Q & H3N2 & Epitope & $\Delta$Humidity & 0.586 & 0.0130 & 0.734 \\
+        I177V & H3N2 & Epitope & $\Delta$Humidity & 0.386 & 0.0159 & 0.734 \\
+        A265T & H3N2 & Epitope & $\Delta$Humidity & $-$0.286 & 0.0177 & 0.734 \\
+        I48V & H3N2 & Epitope & $\Delta$Humidity & $-$0.319 & 0.0191 & 0.734 \\
+        T109N & H3N2 & Epitope & Temperature & 0.473 & 0.0204 & 0.734 \\
+        M157I & H3N2 & Epitope & Temperature & 0.299 & 0.0208 & 0.734 \\
+        N185D & H3N2 & Epitope & Temperature & 0.418 & 0.0221 & 0.734 \\
+        I261V & H3N2 & Epitope & $\Delta$Temperature & $-$0.309 & 0.0234 & 0.734 \\
+        I142T & H3N2 & Epitope & Relative humidity & 0.395 & 0.0235 & 0.734 \\
+        V129A & H3N2 & Epitope & Relative humidity & 0.418 & 0.0301 & 0.760 \\
+        L132F & H3N2 & Epitope & $\Delta$Humidity & $-$0.188 & 0.0314 & 0.760 \\
+        N198S & H3N2 & Epitope & $\Delta$Humidity & 0.411 & 0.0329 & 0.760 \\
+        S172N & H3N2 & Epitope & $\Delta$Temperature & $-$0.318 & 0.0331 & 0.760 \\
+        Q47K & H3N2 & Epitope & $\Delta$Humidity & 0.489 & 0.0381 & 0.765 \\
+        R138G & H3N2 & Epitope & Temperature & 0.527 & 0.0411 & 0.765 \\
+        V176A & H3N2 & Epitope & $\Delta$Humidity & $-$0.314 & 0.0422 & 0.765 \\
+        T109N & H3N2 & Epitope & $\Delta$Temperature & 0.413 & 0.0431 & 0.765 \\
+        I177T & H3N2 & Epitope & Temperature & 0.231 & 0.0458 & 0.765 \\
+        P189S & H3N2 & Epitope & Relative humidity & $-$0.202 & 0.0485 & 0.765 \\
+        N198D & H3N2 & Epitope & Temperature & 0.402 & 0.0489 & 0.765 \\
+        P189S & H3N2 & Ridge & Relative humidity & $-$0.201 & 0.0487 & 0.772 \\
+\end{longtable}
 
 \end{document}

@@ -66,3 +66,8 @@ paper/old_paper_supp.pdf
 
 # Journal targets (personal notes, not for repo)
 paper/journal_targets.*
+paper/supp_info.aux
+paper/supp_info.log
+paper/supp_info.out
+paper/supp_info.pdf
+paper/supp_info.synctex.gz
