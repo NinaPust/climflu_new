@@ -114,8 +114,8 @@ res_main <- read_csv(
   )
 
 r2_forest <- res_main |>
-  distinct(gene, subtype, protein, r.squared) |>
-  mutate(r2_label = sprintf("%.2f", r.squared))
+  distinct(gene, subtype, protein, AIC, AIC_null) |>
+  mutate(r2_label = sprintf("ΔAIC = %.1f", AIC_null - AIC))
 
 dodge <- position_dodge(width = 0.5)
 
@@ -137,7 +137,7 @@ p_forest <- ggplot(res_main,
   geom_text(data = r2_forest,
             aes(x = 0.05, y = protein, label = r2_label),
             hjust = 0, inherit.aes = FALSE,
-            size = (BS - 2) / .pt, colour = "grey40") +
+            size = (BS - 3) / .pt, colour = "grey40") +
   scale_colour_manual(values = PRED_COLOURS, name = NULL) +
   scale_fill_identity() +
   scale_y_discrete(limits = rev) +
@@ -241,8 +241,8 @@ TYPE_COLOURS <- setNames(viridis(3, end = 0.85),
                          c("Substitution\nrate", "Non-synonymous\nrate", "Synonymous\nrate"))
 
 r2_ml <- ml_combined |>
-  distinct(subtype, region, r.squared) |>
-  mutate(r2_label = sprintf("%.2f", r.squared))
+  distinct(subtype, region, AIC, AIC_null) |>
+  mutate(r2_label = sprintf("ΔAIC = %.1f", AIC_null - AIC))
 
 ml_labels <- data.frame(subtype = c("H1N1", "H3N2"))
 
@@ -262,7 +262,7 @@ p_multilevel <- ggplot(ml_combined,
   geom_text(data = r2_ml,
             aes(x = 0.05, y = region, label = r2_label),
             hjust = 0, inherit.aes = FALSE,
-            size = (BS - 2) / .pt, colour = "grey40") +
+            size = (BS - 3) / .pt, colour = "grey40") +
   scale_colour_manual(values = TYPE_COLOURS, name = NULL) +
   scale_fill_identity() +
   scale_y_discrete(limits = rev, expand = expansion(add = 0.4)) +

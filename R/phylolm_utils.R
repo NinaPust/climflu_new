@@ -32,9 +32,22 @@ run_phylolm <- function(formula, data, tree, method = "lambda",
   coef_df$n         <- nrow(data)
   coef_df$r.squared <- tryCatch(summary(fit)$r.squared, error = function(e) NA_real_)
 
+  # Null model: year factor only (no climate predictors) — for delta AIC.
+  response_var <- all.vars(formula)[1]
+  has_year     <- "year" %in% names(data)
+  null_formula <- if (has_year) {
+    as.formula(paste(response_var, "~ as.factor(year)"))
+  } else {
+    as.formula(paste(response_var, "~ 1"))
+  }
+  coef_df$AIC_null <- tryCatch(
+    AIC(phylolm::phylolm(null_formula, data = data, phy = tree, model = method)),
+    error = function(e) NA_real_
+  )
+
   coef_df[, c("gene", "subset", "response", "term",
               "estimate", "std_error", "t_value", "p.value",
-              "lambda", "logLik", "AIC", "n", "r.squared")]
+              "lambda", "logLik", "AIC", "AIC_null", "n", "r.squared")]
 }
 
 
