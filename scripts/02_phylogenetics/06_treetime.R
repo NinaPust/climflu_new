@@ -17,6 +17,8 @@
 # FLAGS:
 #   --gene X   run a single gene segment
 #   --test     use subsampled data from data/test/ (see 00_subsample_test.R)
+#   --covariation   account for covariation in rate estimation
+#                   (outputs to _covariation files)
 
 suppressPackageStartupMessages({
   library(here)
@@ -27,14 +29,15 @@ suppressPackageStartupMessages({
 
 source(here("config.R"))
 
-args     <- commandArgs(trailingOnly = TRUE)
-ALL_GENES <- c(GENES, "PA_H1N1", "PA_H3N2")
-genes    <- if ("--gene" %in% args) {
+args           <- commandArgs(trailingOnly = TRUE)
+ALL_GENES      <- c(GENES, "PA_H1N1", "PA_H3N2")
+genes          <- if ("--gene" %in% args) {
   args[which(args == "--gene") + 1]
 } else {
   ALL_GENES
 }
-use_test <- "--test" %in% args
+use_test       <- "--test" %in% args
+use_covariation <- "--covariation" %in% args
 
 if (use_test) message("*** Running in TEST mode (subsampled data) ***")
 
@@ -44,12 +47,16 @@ paths_timed  <- if (use_test) PATHS$test_trees_timed  else PATHS$trees_timed
 
 for (gene in genes) {
   message("\n[", gene, "] TreeTime molecular clock dating...")
+  if (use_covariation) message("  (with --covariation)")
 
+  suffix   <- if (use_covariation) "_covariation" else ""
   tree_in  <- file.path(paths_pruned,    paste0(gene, "_pruned.nwk"))
   aln_in   <- file.path(PATHS$alignments, paste0(gene, "_aligned.fasta"))
   meta_in  <- file.path(paths_meta,      paste0(gene, "_metadata.csv"))
-  tree_out <- file.path(paths_timed,     paste0(gene, "_timetree.nwk"))
-  tt_dir   <- file.path(paths_timed,     paste0(gene, "_treetime_out"))
+  tree_out <- file.path(paths_timed,
+                        paste0(gene, "_timetree", suffix, ".nwk"))
+  tt_dir   <- file.path(paths_timed,
+                        paste0(gene, "_treetime_out", suffix))
 
   dir.create(paths_timed, recursive = TRUE, showWarnings = FALSE)
 
@@ -78,12 +85,15 @@ for (gene in genes) {
   date_file <- file.path(tt_dir, "dates.csv")
   write_csv(dates, date_file)
 
+  covariation_arg <- if (use_covariation) "--covariation" else ""
+
   cmd <- paste(
     shQuote(TOOLS$treetime),
     "--tree",   shQuote(tree_in),
     "--aln",    shQuote(aln_in),
     "--dates",  shQuote(date_file),
     "--relax",  "1.0 0.0",
+    covariation_arg,
     "--outdir", shQuote(tt_dir)
   )
   message("  CMD: ", cmd)

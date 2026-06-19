@@ -9,6 +9,11 @@
 #   log(dN_rate | dS_rate | branch_omega) ~
 #       scaled_temp + scaled_humidity + [+ scaled_pop_density]
 #
+# NOTE: dN_rate and dS_rate from nnls.tree show a bimodal distribution — a
+#       large cluster of near-zero values (~25% of tips) where the matrix
+#       decomposition assigned essentially no distance to the terminal branch.
+#       These are uninformative and excluded via RATE_FLOOR before regression.
+#
 # INPUT:
 #   data/rates/{gene}_rates.csv
 #   data/trees/timed/{gene}_timetree.nwk
@@ -43,6 +48,12 @@ paths_rates <- if (use_test) PATHS$test_rates       else PATHS$rates
 paths_out   <- if (use_test) PATHS$test_rates       else PATHS$rates_phylolm
 
 RESPONSES <- c("log_dN_rate", "log_dS_rate", "log_branch_omega")
+
+# Exclude near-zero nnls.tree terminal branch dN/dS rates (nnls.tree artefact:
+# ~25% of tips receive near-zero branch lengths when the pairwise distance is
+# absorbed by adjacent internal branches). Threshold chosen from the clear gap
+# in the bimodal rate distribution (10^-8 to 10^-3).
+RATE_FLOOR <- 1e-5
 
 PREDICTOR_TERMS <- c("scaled_temp", "scaled_humidity",
                      "scaled_delta_temp", "scaled_delta_humidity",
@@ -111,7 +122,31 @@ for (gene in genes) {
   all_results <- list()
 
   for (response in avail_responses) {
-    sub_df   <- df |> filter(!is.na(.data[[response]]))
+    sub_df <- df |> filter(!is.na(.data[[response]]))
+
+    # Drop near-zero nnls.tree artefact values before regression.
+    # branch_omega = dN_bl/dS_bl, so it is contaminated whenever either
+    # component is near-zero; filter on both dN_rate and dS_rate for omega.
+    rate_col <- sub("^log_", "", response)
+    filter_cols <- switch(rate_col,
+      dN_rate      = "dN_rate",
+      dS_rate      = "dS_rate",
+      branch_omega = c("dN_rate", "dS_rate"),
+      character(0)
+    )
+    filter_cols <- intersect(filter_cols, names(sub_df))
+    if (length(filter_cols) > 0) {
+      n_before <- nrow(sub_df)
+      for (fc in filter_cols)
+        sub_df <- sub_df |> filter(.data[[fc]] >= RATE_FLOOR)
+      n_drop <- n_before - nrow(sub_df)
+      if (n_drop > 0)
+        message("  [", response, "] Dropped ", n_drop,
+                " tips with ", paste(filter_cols, collapse = " or "),
+                " < ", RATE_FLOOR,
+                " (", round(100 * n_drop / n_before, 1), "%)")
+    }
+
     sub_tree <- keep.tip(tree, sub_df$accession)
 
     if (nrow(sub_df) < 10) {

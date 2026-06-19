@@ -19,6 +19,7 @@ suppressPackageStartupMessages({
   library(cowplot)
   library(maps)
   library(viridis)
+  library(ape)
 })
 
 source(here("config.R"))
@@ -79,13 +80,14 @@ p_map <- ggplot() +
 # ══════════════════════════════════════════════════════════════════════════════
 KEEP_TERMS <- c("scaled_temp", "scaled_humidity",
                 "scaled_sampling_density", "scaled_delta_temp",
-                "scaled_delta_humidity")
+                "scaled_delta_humidity", "scaled_pop_density")
 TERM_LABELS <- c(
   scaled_temp             = "Temperature",
   scaled_humidity         = "Relative\nhumidity",
   scaled_delta_temp       = "ΔTemperature",
   scaled_delta_humidity   = "ΔRelative\nhumidity",
-  scaled_sampling_density = "Sampling\ndensity"
+  scaled_sampling_density = "Sampling\ndensity",
+  scaled_pop_density      = "Population\ndensity"
 )
 PRED_COLOURS <- setNames(viridis(length(TERM_LABELS), end = 0.92),
                          TERM_LABELS)
@@ -148,51 +150,77 @@ p_forest <- ggplot(res_main,
         legend.justification = c(0, 0),
         legend.direction     = "vertical",
         legend.background    = element_rect(fill = "transparent", colour = NA),
-        legend.text          = element_text(size = BS - 2),
-        legend.key.spacing.y = unit(0.2, "lines"),
+        legend.text          = element_text(size = BS - 3),
+        legend.key.spacing.y = unit(0.1, "lines"),
         panel.grid.major.x   = element_blank(),
         aspect.ratio         = 0.5,
         strip.text           = element_blank(),
         strip.background     = element_blank()) +
-  guides(colour = guide_legend(nrow = 5))
+  guides(colour = guide_legend(nrow = 6))
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ROW 2-A: Scatter — log(rate) vs temperature, H1 only
+# ROW 1-B: Root-to-tip regression — H1N1 and H3N2
 # ══════════════════════════════════════════════════════════════════════════════
-set.seed(42)
-pts_scatter <- rates_all |>
-  filter(gene %in% c("H1", "H3"), !is.na(era5_temp_mean), !is.na(log_rate)) |>
-  mutate(subtype = ifelse(gene == "H1", "H1N1", "H3N2")) |>
-  group_by(subtype) |>
-  mutate(row_id = row_number(), total = n()) |>
-  filter(row_id <= pmin(total, 2000)) |>
-  select(-row_id, -total) |>
-  ungroup()
+parse_clock <- function(gene) {
+  path  <- file.path(PATHS$trees_timed, paste0(gene, "_treetime_out"),
+                     "molecular_clock.txt")
+  lines <- readLines(path)
+  rate  <- as.numeric(sub(".*--rate:\\s*", "", lines[grep("rate",  lines)[1]]))
+  r2    <- as.numeric(sub(".*--r\\^2:\\s*", "", lines[grep("r\\^2", lines)[1]]))
+  list(rate = rate, r2 = r2)
+}
 
-SCATTER_COL <- setNames(viridis(2, end = 0.75), c("H1N1", "H3N2"))
+make_rtt_panel <- function(gene, tag_letter, show_y = TRUE, title = NULL) {
+  dates <- read_tsv(
+    file.path(PATHS$trees_timed, paste0(gene, "_treetime_out"), "dates.tsv"),
+    comment = "#", col_names = c("node", "date", "num_date"),
+    show_col_types = FALSE
+  ) |> filter(!grepl("^NODE_", node))
 
-make_scatter <- function(dat, tag_letter, show_y = TRUE, show_x = TRUE) {
-  lbl <- unique(dat$subtype)
-  p <- ggplot(dat, aes(x = era5_temp_mean, y = log_rate)) +
-    geom_point(size = 0.5, alpha = 0.3, shape = 16,
-               colour = SCATTER_COL[lbl]) +
-    annotate("text", x = -Inf, y = Inf, label = lbl,
-             hjust = -0.1, vjust = 1.4,
-             size = (BS - 1) / .pt, colour = "grey20", fontface = "bold") +
-    labs(x = if (show_x) "Temperature (°C)" else NULL,
-         y = if (show_y) "log(substitution rate)" else NULL,
-         tag = tag_letter) +
+  clock <- parse_clock(gene)
+
+  div_tree <- ape::read.nexus(
+    file.path(PATHS$trees_timed, paste0(gene, "_treetime_out"),
+              "divergence_tree.nexus")
+  )
+  rtt <- data.frame(
+    node     = div_tree$tip.label,
+    distance = ape::node.depth.edgelength(div_tree)[seq_len(ape::Ntip(div_tree))]
+  )
+
+  plot_df <- dates |>
+    inner_join(rtt, by = "node") |>
+    filter(is.finite(distance), is.finite(num_date))
+
+  label <- sprintf("rate = %.2e subs/site/yr\nR² = %.2f", clock$rate, clock$r2)
+
+  p <- ggplot(plot_df, aes(x = num_date, y = distance)) +
+    geom_point(size = 0.8, alpha = 0.4, colour = viridis(1, begin = 0.5)) +
+    geom_smooth(method = "lm", se = FALSE, linewidth = 0.5,
+                colour = "black", linetype = "dashed") +
+    annotate("text", x = Inf, y = -Inf, label = label,
+             hjust = 1.05, vjust = -0.3,
+             size = (BS - 2) / .pt, colour = "grey30") +
+    labs(
+      x     = "Collection year",
+      y     = if (show_y) "Root-to-tip distance (subs/site)" else NULL,
+      title = title,
+      tag   = tag_letter
+    ) +
     common_theme +
-    theme(aspect.ratio = 0.8)
-  if (!show_y) p <- p + theme(axis.text.y = element_blank(),
+    theme(
+      aspect.ratio        = 0.8,
+      plot.title          = element_text(size = BS, face = "bold",
+                                         hjust = 0, colour = "grey20"),
+      plot.title.position = "plot"
+    )
+  if (!show_y) p <- p + theme(axis.text.y  = element_blank(),
                                axis.ticks.y = element_blank())
   p
 }
 
-p_scatter_h1 <- make_scatter(filter(pts_scatter, subtype == "H1N1"), "B",
-                              show_y = TRUE,  show_x = TRUE)
-p_scatter_h3 <- make_scatter(filter(pts_scatter, subtype == "H3N2"), "",
-                              show_y = FALSE, show_x = FALSE)
+p_rtt_h1 <- make_rtt_panel("H1", "B", show_y = TRUE,  title = "H1N1")
+p_rtt_h3 <- make_rtt_panel("H3", "",  show_y = FALSE, title = "H3N2")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ROW 2-B: Multi-level forest — temperature coefficient, H1 only
@@ -281,40 +309,67 @@ p_multilevel <- ggplot(ml_combined,
         strip.background   = element_blank())
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ROWS 3 & 4: Jackknife ordered strip — H1 and H3 separately
+# ROWS 3 & 4: Jackknife 2×2 — whole gene (left) | epitope (right)
+#             Row 1 = H1N1, Row 2 = H3N2; y-axis range matched within rows
 # ══════════════════════════════════════════════════════════════════════════════
 SIG_LEVELS  <- c("ns", "p < 0.05", "p < 0.01", "p < 0.001")
 SIG_COLOURS <- setNames(viridis(4, end = 0.92), SIG_LEVELS)
 
-jk_all <- bind_rows(
-  read_csv(file.path(PATHS$rates, "jackknife", "H1",
-                     "jackknife_results.csv"), show_col_types = FALSE),
-  read_csv(file.path(PATHS$rates, "jackknife", "H3",
-                     "jackknife_results.csv"), show_col_types = FALSE)
-) |>
+prep_jk <- function(df) {
+  df |>
+    mutate(
+      sig = factor(
+        case_when(
+          p.value < 0.001 ~ "p < 0.001",
+          p.value < 0.01  ~ "p < 0.01",
+          p.value < 0.05  ~ "p < 0.05",
+          TRUE            ~ "ns"
+        ), levels = SIG_LEVELS
+      )
+    ) |>
+    group_by(gene) |>
+    arrange(estimate) |>
+    mutate(rank = row_number()) |>
+    ungroup()
+}
+
+jk_whole <- prep_jk(bind_rows(
+  read_csv(file.path(PATHS$rates, "jackknife", "H1", "pct60", "jackknife_results.csv"),
+           show_col_types = FALSE),
+  read_csv(file.path(PATHS$rates, "jackknife", "H3", "pct60", "jackknife_results.csv"),
+           show_col_types = FALSE)
+))
+
+jk_epi <- prep_jk(bind_rows(
+  read_csv(file.path(PATHS$rates, "jackknife", "epitope",
+                     "H1_epitope_jackknife_results.csv"),
+           show_col_types = FALSE) |>
+    rename(any_of(c(std_error = "StdErr"))) |> mutate(gene = "H1"),
+  read_csv(file.path(PATHS$rates, "jackknife", "epitope",
+                     "H3_epitope_jackknife_results.csv"),
+           show_col_types = FALSE) |>
+    rename(any_of(c(std_error = "StdErr"))) |> mutate(gene = "H3")
+))
+
+# Shared y limits per gene (whole + epitope combined)
+# Both rows use the same breaks; ylims padded to ensure all breaks are visible
+JK_BREAKS <- seq(-0.20, 0.05, by = 0.05)
+ylims <- bind_rows(jk_whole, jk_epi) |>
+  mutate(lo = estimate - std_error, hi = estimate + std_error) |>
+  group_by(gene) |>
+  summarise(ymin = min(lo, na.rm = TRUE), ymax = max(hi, na.rm = TRUE),
+            .groups = "drop") |>
   mutate(
-    sig = factor(
-      case_when(
-        p.value < 0.001 ~ "p < 0.001",
-        p.value < 0.01  ~ "p < 0.01",
-        p.value < 0.05  ~ "p < 0.05",
-        TRUE            ~ "ns"
-      ), levels = SIG_LEVELS
-    )
-  ) |>
-  group_by(gene) |>
-  arrange(estimate) |>
-  mutate(rank = row_number()) |>
-  ungroup()
+    ymin = pmin(ymin, min(JK_BREAKS) - 0.01),
+    ymax = pmax(ymax, max(JK_BREAKS) + 0.01)
+  )
 
-sig_pct <- jk_all |>
-  group_by(gene) |>
-  summarise(pct = round(100 * mean(p.value < 0.05), 1), .groups = "drop")
+make_jk_panel <- function(dat, ylim = NULL, gene_label, tag_letter,
+                          show_x = TRUE, show_legend = FALSE,
+                          show_y = TRUE) {
+  n_draw <- unique(dat$n)
+  lbl    <- paste0(gene_label, " — n = ", n_draw, " per draw")
 
-make_jk_panel <- function(dat, gene_label, tag_letter,
-                          show_x = TRUE, show_legend = FALSE, show_y = TRUE) {
-  pct <- sig_pct$pct[sig_pct$gene == unique(dat$gene)]
-  lbl <- paste0(gene_label, " — ", pct, "% p < 0.05")
   p <- ggplot(dat, aes(x = rank, y = estimate, colour = sig)) +
     geom_hline(yintercept = 0, linetype = "dashed",
                colour = "grey50", linewidth = 0.4) +
@@ -329,8 +384,14 @@ make_jk_panel <- function(dat, gene_label, tag_letter,
                         guide = guide_legend(
                           override.aes = list(size = 2.5, alpha = 1),
                           nrow = 1)) +
-    labs(x = if (show_x) "Sample rank (ordered by estimate)" else NULL,
-         y = if (show_y) "Temperature coefficient" else NULL,
+    scale_y_continuous(
+      limits = c(ylims$ymin[ylims$gene == unique(dat$gene)],
+                 ylims$ymax[ylims$gene == unique(dat$gene)]),
+      breaks = JK_BREAKS,
+      labels = scales::label_number(accuracy = 0.01)
+    ) +
+    labs(x   = if (show_x) "Sample rank (ordered by estimate)" else NULL,
+         y   = if (show_y) "Temperature coefficient" else NULL,
          tag = tag_letter) +
     common_theme +
     theme(
@@ -344,23 +405,34 @@ make_jk_panel <- function(dat, gene_label, tag_letter,
       else
         margin(5.5, 5.5, 0, 5.5)
     )
-  if (!show_x)
-    p <- p + theme(axis.text.x  = element_blank(),
-                   axis.ticks.x = element_blank())
+  if (!show_x) p <- p + theme(axis.text.x  = element_blank(),
+                               axis.ticks.x = element_blank())
+  if (!show_y) p <- p + theme(axis.text.y  = element_blank(),
+                               axis.ticks.y = element_blank())
   p
 }
 
-p_jk_h1 <- make_jk_panel(filter(jk_all, gene == "H1"), "H1N1 (H1)", "E",
-                          show_x = FALSE, show_legend = FALSE, show_y = FALSE)
-p_jk_h3 <- make_jk_panel(filter(jk_all, gene == "H3"), "H3N2 (H3)", "",
-                          show_x = TRUE,  show_legend = TRUE,  show_y = TRUE)
+p_jk_h1_whole <- make_jk_panel(filter(jk_whole, gene == "H1"),
+                                gene_label = "H1N1", tag_letter = "E",
+                                show_x = FALSE, show_y = TRUE)
+p_jk_h1_epi   <- make_jk_panel(filter(jk_epi,   gene == "H1"),
+                                gene_label = "H1N1 epitope", tag_letter = "",
+                                show_x = FALSE, show_y = FALSE)
+p_jk_h3_whole <- make_jk_panel(filter(jk_whole, gene == "H3"),
+                                gene_label = "H3N2", tag_letter = "",
+                                show_x = TRUE, show_y = TRUE,
+                                show_legend = TRUE)
+p_jk_h3_epi   <- make_jk_panel(filter(jk_epi,   gene == "H3"),
+                                gene_label = "H3N2 epitope", tag_letter = "",
+                                show_x = TRUE, show_y = FALSE)
 
-p_jk <- p_jk_h1 / p_jk_h3 + plot_layout(heights = c(1, 1))
+p_jk <- (p_jk_h1_whole | p_jk_h1_epi) / (p_jk_h3_whole | p_jk_h3_epi) +
+  plot_layout(heights = c(1, 1))
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Assemble
 # ══════════════════════════════════════════════════════════════════════════════
-row1 <- (p_map | p_scatter_h1 | p_scatter_h3) +
+row1 <- (p_map | p_rtt_h1 | p_rtt_h3) +
   plot_layout(widths = c(1.6, 1, 1))
 row2 <- (p_forest | p_multilevel) + plot_layout(widths = c(1, 1))
 
@@ -371,4 +443,17 @@ ggsave(file.path(out_dir, "fig_main.png"),
        fig_main, width = 8.27, height = 10, dpi = 200)
 ggsave(file.path(out_dir, "fig_main.pdf"),
        fig_main, width = 8.27, height = 10)
-message("Saved: paper/figures/fig_main.png / .pdf")
+
+# Panel B: RTT plots occupy 2/3.6 of row-1 width, row-1 is 0.6/3.2 of total height
+panel_B <- p_rtt_h1 | p_rtt_h3
+ggsave(file.path(out_dir, "fig_main_B.pdf"), panel_B,
+       width = 8.27 * 2 / 3.6, height = 10 * 0.6 / 3.2)
+
+# Panel E: jackknife 2x2 occupies full width, 1.2/3.2 of total height
+ggsave(file.path(out_dir, "fig_main_E.pdf"), p_jk,
+       width = 8.27, height = 10 * 1.2 / 3.2)
+
+ggsave(file.path(out_dir, "fig_main_C.pdf"), p_forest,
+       width = 8.27 / 2, height = 10 * 1.4 / 3.2)
+
+message("Saved: paper/figures/fig_main.png / .pdf / fig_main_B.pdf / fig_main_C.pdf / fig_main_E.pdf")

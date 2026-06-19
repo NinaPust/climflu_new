@@ -59,6 +59,9 @@ data/epitope/
 # Archive (superseded scripts, figures, results)
 archive/
 
+# Poster working directory
+poster/
+
 # Paper drafts / previous versions
 paper/old_paper.docx
 paper/old_paper.pdf

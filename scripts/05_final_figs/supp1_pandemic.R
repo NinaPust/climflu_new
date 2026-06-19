@@ -27,13 +27,14 @@ BS2 <- 11
 
 KEEP_TERMS <- c("scaled_temp", "scaled_humidity",
                 "scaled_sampling_density", "scaled_delta_temp",
-                "scaled_delta_humidity")
+                "scaled_delta_humidity", "scaled_pop_density")
 TERM_LABELS <- c(
   scaled_temp             = "Temperature",
   scaled_humidity         = "Relative\nhumidity",
   scaled_delta_temp       = "ΔTemperature",
   scaled_delta_humidity   = "ΔRelative\nhumidity",
-  scaled_sampling_density = "Sampling\ndensity"
+  scaled_sampling_density = "Sampling\ndensity",
+  scaled_pop_density      = "Population\ndensity"
 )
 PRED_COLOURS <- setNames(viridis(length(TERM_LABELS), end = 0.92), TERM_LABELS)
 
