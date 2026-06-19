@@ -32,23 +32,23 @@
     \centering
     \includegraphics[width=\textwidth]{paper/Supplementary/supp2_site_map_mod.png}
     \caption{Linear schematic of the hemagglutinin gene showing codon positions belonging to the globular head (HA1), stalk region (HA2), antigenic epitope, and antigenic ridge for H1 (H1N1) and H3 (H3N2).}
-    \label{fig:s1}
+    \label{fig:s1_map}
 \end{figure}
 \newpage
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{paper/Supplementary/supp5_epitope_forest_mod2.png}
-    \caption{Phylogenetic regression coefficients of climatic and demographic predictors on non-synonymous (NS) and synonymous (S) substitution rates across the full hemagglutinin gene and three subregions (HA2, epitope, ridge), for H1N1 and H3N2. Open points indicate non-significant associations after FDR correction; filled points indicate $p_{\text{FDR}} < 0.05$. $\Delta$AIC is the difference in AIC between the full model and a year-only null model, reflecting the contribution of climatic variables beyond temporal variation.}
-    \label{fig:s2}
+    \caption{Phylogenetic regression coefficients of climatic and demographic predictors on non-synonymous ($d_{\text{N}}$) and synonymous ($d_{\text{S}}$) substitution rates across the full hemagglutinin gene and three subregions (HA2, epitope, ridge), for H1N1 and H3N2. Open points indicate non-significant associations after FDR correction; filled points indicate $p_{\text{FDR}} < 0.05$. $\Delta$AIC is the difference in AIC between the full model and a year-only null model, reflecting the contribution of climatic variables beyond temporal variation.}
+    \label{fig:s2_epiforest}
 \end{figure}
 \newpage
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{paper/Supplementary/supp3_jackknife_sequences.png}
-    \caption{Per-sequence jackknife stability of the temperature effect on non-synonymous substitution rates in H1 (H1N1), H3 (H3N2), and PA (negative control, both subtypes). Each sequence is ranked by its median regression coefficient across all jackknife draws in which it was included. Dark ribbons indicate the interquartile range (25th–75th percentile); light ribbons indicate the 5th–95th percentile. Points are coloured by the proportion of draws in which each sequence was sampled. H3 sequences were sampled at a lower average frequency owing to the larger size of the H3N2 dataset.}
-    \label{fig:s3}
+    \caption{Per-sequence subsample stability analysis of the temperature effect on non-synonymous substitution rates in H1 (H1N1), H3 (H3N2), and PA (negative control, both subtypes). Each sequence is ranked by its median regression coefficient across all subsample draws in which it was included. Dark ribbons indicate the interquartile range (25th–75th percentile); light ribbons indicate the 5th–95th percentile. Points are coloured by the proportion of draws in which each sequence was sampled. H3 sequences were sampled at a lower average frequency owing to the larger size of the H3N2 dataset.}
+    \label{fig:s3_jk_sequence}
 \end{figure}
 \newpage
 
@@ -56,15 +56,15 @@
     \centering
     \includegraphics[width=\textwidth]{paper/Supplementary/supp1_pandemic_mod.png}
     \caption{Phylogenetic regression coefficients of climatic and demographic predictors on non-synonymous substitution rates in H1N1, estimated separately for pandemic (2009--2010; $n = 209$) and post-pandemic (2011--2023; $n = 6,721$) sequences. $\Delta$AIC is relative to a year-only null model.}
-    \label{fig:s4}
+    \label{fig:s4_pandemicforest}
 \end{figure}
 \newpage
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{paper/Supplementary/supp6_epitope_jackknife_mod.png}
-    \caption{Jackknife stability of the temperature effect on non-synonymous substitution rates in the HA2, epitope, and ridge subregions of hemagglutinin, for H1N1 and H3N2. Each point represents one jackknife draw, ordered by estimated coefficient. Colours indicate statistical significance of the raw $p$-value. Where dataset size was reduced due to sequences with no observed non-synonymous substitutions in the respective region, draw size was set to 60\% of the available sequences.}
-    \label{fig:s5}
+    \caption{Subsample stability analysis of the temperature effect on non-synonymous substitution rates in the HA2, epitope, and ridge subregions of hemagglutinin, for H1N1 and H3N2. Each point represents one subsample draw, ordered by estimated coefficient. Colours indicate statistical significance of the raw $p$-value. Where dataset size was reduced due to sequences with no observed non-synonymous substitutions in the respective region, draw size was set to 60\% of the available sequences.}
+    \label{fig:s5_jk_epitope}
 \end{figure}
 \newpage
 
@@ -72,7 +72,7 @@
     \centering
     \includegraphics[width=\textwidth]{paper/Supplementary/supp7_trees_mod.png}
     \caption{Temporal signal and phylogenetic structure of the H1N1 and H3N2 hemagglutinin datasets. Left panels: root-to-tip regression of divergence (substitutions per site) against collection year, with the molecular clock rate and $R^2$ inset. Right panels: time-scaled maximum likelihood chronograms.}
-    \label{fig:s6}
+    \label{fig:s6_tree}
 \end{figure}
 \newpage
 
@@ -80,22 +80,52 @@
     \centering
     \includegraphics[width=\textwidth]{paper/Supplementary/supp4_data_overview_mod.png}
     \caption{Overview of the sequence metadata used in this study. (A--C) Kernel density estimates of collection-site temperature, relative humidity, and population density, shown separately for H1N1 and H3N2. (D--E) Number of unique sequences per year and per calendar month across all six gene segments.}
-    \label{fig:s7}
+    \label{fig:s7_data}
 \end{figure}
 \newpage
 
 \begin{table}[H]
     \centering
-    \caption{Number of unique sequence pairs included in each phylogenetic regression analysis, for non-synonymous (NS) and synonymous (S) substitution rates across the full hemagglutinin gene and three subregions, in H1N1 and H3N2. Sample sizes differ between rate types within the same region because pairs with zero observed substitutions of a given type are excluded.}
-    \label{tab:s1}
+    \caption{Phylogenetic regression coefficients for temperature (scaled) on non-synonymous ($d_{\text{N}}$) and synonymous ($d_{\text{S}}$) substitution rates across the full hemagglutinin gene and three subregions, for H1N1 and H3N2. SE: standard error. $p_{\text{FDR}}$: Benjamini--Hochberg adjusted $p$-value. Significant associations ($p_{\text{FDR}} < 0.05$) are shown in bold.}
+    \label{tab:s1_epitope_p}
+    \begin{tabular}{llcrrrr}
+        \toprule
+        \textbf{Subtype} & \textbf{Region} & \textbf{Rate} & \textbf{Coefficient} & \textbf{SE} & \textbf{\textit{p}} & $\boldsymbol{p_{\text{FDR}}}$ \\
+        \midrule
+        \textbf{H1N1} & Whole gene & $d_{\text{N}}$ & \textbf{$-$0.059} & \textbf{0.011} & \textbf{$<$0.001} & \textbf{$<$0.001} \\
+                      & Whole gene & $d_{\text{S}}$  & \textbf{$-$0.099} & \textbf{0.018} & \textbf{$<$0.001} & \textbf{$<$0.001} \\
+                      & HA2        & $d_{\text{N}}$ & \textbf{$-$0.077} & \textbf{0.015} & \textbf{$<$0.001} & \textbf{$<$0.001} \\
+                      & HA2        & $d_{\text{S}}$  & \textbf{$-$0.145} & \textbf{0.032} & \textbf{$<$0.001} & \textbf{$<$0.001} \\
+                      & Epitope    & $d_{\text{N}}$ & \textbf{$-$0.106} & \textbf{0.023} & \textbf{$<$0.001} & \textbf{$<$0.001} \\
+                      & Epitope    & $d_{\text{S}}$  & \textbf{$-$0.142} & \textbf{0.043} & \textbf{0.001}    & \textbf{0.007}    \\
+                      & Ridge      & $d_{\text{N}}$ & \textbf{$-$0.186} & \textbf{0.061} & \textbf{0.003}    & \textbf{0.014}    \\
+                      & Ridge      & $d_{\text{S}}$  & $-$0.171          & 0.105          & 0.110             & 0.322             \\
+        \midrule
+        \textbf{H3N2} & Whole gene & $d_{\text{N}}$ & \textbf{$-$0.041} & \textbf{0.012} & \textbf{$<$0.001} & \textbf{0.004}    \\
+                      & Whole gene & $d_{\text{S}}$  & \textbf{$-$0.035} & \textbf{0.011} & \textbf{$<$0.001} & \textbf{0.006}    \\
+                      & HA2        & $d_{\text{N}}$ & $-$0.024          & 0.021          & 0.268             & 0.572             \\
+                      & HA2        & $d_{\text{S}}$  & \textbf{$-$0.042} & \textbf{0.015} & \textbf{0.006}    & \textbf{0.027}    \\
+                      & Epitope    & $d_{\text{N}}$ & $-$0.049          & 0.022          & 0.022             & 0.092             \\
+                      & Epitope    & $d_{\text{S}}$  & $+$0.007          & 0.022          & 0.753             & 0.926             \\
+                      & Ridge      & $d_{\text{N}}$ & $-$0.043          & 0.086          & 0.620             & 0.826             \\
+                      & Ridge      & $d_{\text{S}}$  & $+$0.093          & 0.131          & 0.490             & 0.764             \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\newpage
+
+\begin{table}[H]
+    \centering
+    \caption{Number of unique sequence pairs included in each phylogenetic regression analysis, for non-synonymous ($d_{\text{N}}$) and synonymous ($d_{\text{S}}$) substitution rates across the full hemagglutinin gene and three subregions, in H1N1 and H3N2. Sample sizes differ between rate types within the same region because pairs with zero observed substitutions of a given type are excluded.}
+    \label{tab:s2_epitope}
     \begin{tabular}{lcccc}
         \toprule
         & \textbf{Whole gene} & \textbf{HA2} & \textbf{Epitope} & \textbf{Antigenic ridge} \\
         \midrule
-        H1 NS & 5{,}768 & 2{,}781 & 1{,}101 & 157 \\
-        H1 S  & 1{,}745 &   572 &   255 &  60 \\
-        H3 NS & 4{,}823 & 1{,}361 & 1{,}351 &  89 \\
-        H3 S  & 6{,}696 & 2{,}801 & 1{,}251 &  27 \\
+        H1 $d_{\text{N}}$ & 5{,}768 & 2{,}781 & 1{,}101 & 157 \\
+        H1 $d_{\text{S}}$  & 1{,}745 &   572 &   255 &  60 \\
+        H3 $d_{\text{N}}$ & 4{,}823 & 1{,}361 & 1{,}351 &  89 \\
+        H3 $d_{\text{S}}$  & 6{,}696 & 2{,}801 & 1{,}251 &  27 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -103,7 +133,7 @@
 
 \begin{longtable}{llllrccc}
     \caption{Nominally significant associations ($p < 0.05$, uncorrected) between recurrent hemagglutinin mutations and climate variables, ranked by subtype, region, and raw $p$-value. No association survives FDR correction. Effect size $r$ is the rank-biserial correlation between sequences carrying and not carrying the mutation. $p_{\text{FDR}}$ is the Benjamini--Hochberg adjusted $p$-value. $n$ is the number of sequences carrying the mutation.}
-    \label{tab:s2} \\
+    \label{tab:s3_mutations} \\
     \toprule
     \textbf{Mutation} & \textbf{Subtype} & \textbf{Region} & \textbf{Predictor} & \textbf{\textit{r}} & \textbf{\textit{p}} & $\boldsymbol{p_{\text{FDR}}}$ & \textbf{\textit{n}} \\
     \midrule
