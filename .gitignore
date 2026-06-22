@@ -38,12 +38,12 @@ lnf
 # Exploratory / diagnostic scripts (not part of reproducible pipeline)
 scripts/00_metadata/00z_*.R
 
+# Paper directory — only subdirectories and manuscript_outline.tex are tracked
+paper/*
+!paper/*/
+!paper/manuscript_outline.tex
+
 # LaTeX build artefacts
-paper/manuscript_outline.aux
-paper/manuscript_outline.log
-paper/manuscript_outline.out
-paper/manuscript_outline.pdf
-paper/manuscript_outline.synctex.gz
 figures/metadata_diagnostics/
 scripts/02_phylogenetics/04z_test_*.R
 
@@ -62,18 +62,4 @@ archive/
 # Poster working directory
 poster/
 
-# Paper drafts / previous versions
-paper/old_paper.docx
-paper/old_paper.pdf
-paper/old_paper_supp.pdf
-
-# Journal targets (personal notes, not for repo)
-paper/journal_targets.*
-paper/supp_info.aux
-paper/supp_info.log
-paper/supp_info.out
-paper/supp_info.pdf
-paper/supp_info.synctex.gz
-
-paper/
 figures/
