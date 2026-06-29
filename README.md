@@ -1,6 +1,6 @@
 # climflu_new
 
-Studying the effects of environmental variables (temperature, relative humidity) on the molecular evolution of Influenza A surface proteins — a redo of [Influenza_env](https://github.com/NinaPust/Influenza_env) with GISAID data and improved methods.
+Studying the effects of environmental variables (temperature, relative humidity) on the molecular evolution of Influenza A surface proteins.
 
 **Gene segments:** H1, H3, N1, N2 + PA_H1N1, PA_H3N2 (PA as negative control)  
 **Environmental data:** ERA5-Land (Copernicus CDS), GHSL population density  
