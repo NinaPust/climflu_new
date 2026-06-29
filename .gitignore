@@ -38,10 +38,8 @@ lnf
 # Exploratory / diagnostic scripts (not part of reproducible pipeline)
 scripts/00_metadata/00z_*.R
 
-# Paper directory — only subdirectories and manuscript_outline.tex are tracked
-paper/*
-!paper/*/
-!paper/manuscript_outline.tex
+# Paper directory
+paper/
 
 # LaTeX build artefacts
 figures/metadata_diagnostics/
