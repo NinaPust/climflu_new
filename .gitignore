@@ -61,3 +61,8 @@ archive/
 poster/
 
 figures/
+
+# Revisions workspace: data/ contains symlinks to the original data/ plus
+# freshly-regenerated large outputs (epitope, rates) — never tracked.
+# revisions/scripts, revisions/R, and revisions/config.R ARE tracked (they're code).
+revisions/data/
