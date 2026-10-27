@@ -42,6 +42,7 @@ suppressPackageStartupMessages({
 })
 
 source(here("config.R"))
+source(here("R", "jackknife_utils.R"))
 source(here("R", "climate_utils.R"))
 
 # ── CLI args ──────────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ classify_sig <- function(p) {
 }
 
 TOP_N_ENRICHED <- 40L   # sequences to show in enrichment plot
+JK_COEF <- "scaled_temp"
 
 for (gene in genes) {
   message("\n[", gene, "] Exploring significance tier: ", sig_arg, " and above...")
@@ -86,13 +88,13 @@ for (gene in genes) {
   jk_dir     <- file.path(PATHS$rates, "jackknife", gene)
   res_path   <- file.path(jk_dir, "jackknife_results.csv")
   mem_path   <- file.path(jk_dir, "jackknife_sequence_membership.csv")
-  rates_path <- file.path(PATHS$rates, paste0(gene, "_rates.csv"))
+  rates_path <- file.path(paste0("/home/nina/climflu_new/data/rates/", gene, "_rates.csv"))
 
   for (p in c(res_path, mem_path, rates_path)) {
     if (!file.exists(p)) { warning("Missing: ", p); next }
   }
 
-  results    <- read_csv(res_path,    show_col_types = FALSE)
+  results    <- read_jackknife(res_path, JK_COEF)
   membership <- read_csv(mem_path,    show_col_types = FALSE)
   rates      <- read_csv(rates_path,  show_col_types = FALSE)
   rates      <- scale_env_vars(rates)

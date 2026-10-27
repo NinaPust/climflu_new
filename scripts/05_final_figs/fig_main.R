@@ -23,6 +23,7 @@ suppressPackageStartupMessages({
 })
 
 source(here("config.R"))
+source(here("R", "jackknife_utils.R"))
 
 out_dir <- here("paper", "figures")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -48,11 +49,16 @@ common_theme <- theme_bw(base_size = BS) +
 # ══════════════════════════════════════════════════════════════════════════════
 # ROW 1-A: Map with black dots
 # ══════════════════════════════════════════════════════════════════════════════
+# Sampling locations are unchanged by the revision, so these come from the
+# ORIGINAL data tree. data/rates/ holds only the re-derived tables
+# ({gene}_rates_slac.csv etc.), not the base {gene}_rates.csv.
 rates_all <- lapply(ALL_GENES, function(g) {
-  p <- file.path(PATHS$rates, paste0(g, "_rates.csv"))
+  p <- here("data", "rates", paste0(g, "_rates.csv"))
   if (!file.exists(p)) return(NULL)
   read_csv(p, show_col_types = FALSE) |> mutate(gene = g)
 }) |> bind_rows()
+if (nrow(rates_all) == 0)
+  stop("No rates tables found under data/rates/ — panel A needs them for the map")
 
 map_df <- rates_all |>
   filter(!is.na(latitude), !is.na(longitude)) |>
@@ -92,8 +98,10 @@ TERM_LABELS <- c(
 PRED_COLOURS <- setNames(viridis(length(TERM_LABELS), end = 0.92),
                          TERM_LABELS)
 
+# Panel C is the whole-gene phylolm from 03_rates_analysis/02_phylolm.R, which
+# the revision did not touch — read from the ORIGINAL data tree.
 res_main <- read_csv(
-  file.path(PATHS$rates_phylolm, "all_phylolm_results.csv"),
+  here("data", "rates", "phylolm", "all_phylolm_results.csv"),
   show_col_types = FALSE
 ) |>
   filter(response == "log_rate", term %in% KEEP_TERMS) |>
@@ -223,51 +231,71 @@ p_rtt_h1 <- make_rtt_panel("H1", "B", show_y = TRUE,  title = "H1N1")
 p_rtt_h3 <- make_rtt_panel("H3", "",  show_y = FALSE, title = "H3N2")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ROW 2-B: Multi-level forest — temperature coefficient, H1 only
+# PANEL D: Multi-level forest — temperature coefficient
+#
+# Layout is unchanged from the submitted figure: two facets (H1N1, H3N2), six
+# rows each, narrowing from the whole gene down to the antigenic ridge:
+#
+#   Terminal branch rate   whole gene, overall substitutions  <- same source as C
+#   Whole-gene dN          whole gene, non-synonymous
+#   Whole-gene dS          whole gene, synonymous
+#   HA2 dN                 conserved subunit
+#   Epitope dN             antigenic sites
+#   Ridge dN               antigenic ridge
+#
+# Only the SOURCES change. Row 1 still comes from 03_rates_analysis/02_phylolm.R
+# (unrevised, read from the original data tree). Rows 2-6 now come from
+# 04_epitope_analysis/04_phylolm_slac.R, i.e. HyPhy SLAC maximum-likelihood
+# counts normalised by per-branch expected site counts, in place of the
+# parsimony NS/S rates the old archived script 12_phylolm_ns_rates.R produced.
 # ══════════════════════════════════════════════════════════════════════════════
 ml_main <- read_csv(
-  file.path(PATHS$rates_phylolm, "all_phylolm_results.csv"),
+  here("data", "rates", "phylolm", "all_phylolm_results.csv"),
   show_col_types = FALSE
 ) |>
   filter(response == "log_rate", term == "scaled_temp", gene %in% c("H1", "H3")) |>
   mutate(region = "Terminal\nbranch rate")
 
-ml_ns <- read_csv(
-  file.path(PATHS$rates_phylolm, "all_phylolm_ns_results.csv"),
+# Rows 2-6: one SLAC model each, selected by (region, response) pair.
+SLAC_ROWS <- tibble::tribble(
+  ~subset,   ~response,      ~region,
+  "full",    "log_dN_rate",  "Whole-gene\ndN",
+  "full",    "log_dS_rate",  "Whole-gene\ndS",
+  "HA2",     "log_dN_rate",  "HA2\ndN",
+  "epitope", "log_dN_rate",  "Epitope\ndN",
+  "ridge",   "log_dN_rate",  "Ridge\ndN"
+)
+
+ml_slac <- read_csv(
+  file.path(PATHS$rates_phylolm, "all_phylolm_slac_results.csv"),
   show_col_types = FALSE
 ) |>
   filter(term == "scaled_temp", gene %in% c("H1", "H3")) |>
-  mutate(region = case_when(
-    response == "log_full_ns_rate"    ~ "Whole-gene\nNS rate",
-    response == "log_full_s_rate"     ~ "Whole-gene\nS rate",
-    response == "log_epitope_ns_rate" ~ "Epitope\nNS rate",
-    response == "log_ridge_ns_rate"   ~ "Ridge\nNS rate",
-    response == "log_HA2_ns_rate"     ~ "HA2\nNS rate",
-    TRUE                              ~ NA_character_
-  )) |>
+  inner_join(SLAC_ROWS, by = c("subset", "response"))
+
+ROW_LEVELS <- c("Terminal\nbranch rate", SLAC_ROWS$region)
+
+ml_combined <- bind_rows(ml_main, ml_slac) |>
+  mutate(
+    subtype = ifelse(gene == "H1", "H1N1", "H3N2"),
+    region  = factor(region, levels = ROW_LEVELS),
+    ci_lo   = estimate - 1.96 * std_error,
+    ci_hi   = estimate + 1.96 * std_error,
+    sig_fdr = !is.na(p.fdr) & p.fdr < 0.05,
+    rate_type = factor(case_when(
+      region == "Terminal\nbranch rate" ~ "Substitution\nrate",
+      grepl("dS$", as.character(region)) ~ "Synonymous\nrate",
+      TRUE                               ~ "Non-synonymous\nrate"
+    ), levels = c("Substitution\nrate", "Non-synonymous\nrate",
+                  "Synonymous\nrate"))
+  ) |>
   filter(!is.na(region))
 
-ml_combined <- bind_rows(ml_main, ml_ns) |>
-  mutate(
-    subtype   = ifelse(gene == "H1", "H1N1", "H3N2"),
-    region = factor(region, levels = c(
-      "Terminal\nbranch rate", "Whole-gene\nNS rate",
-      "Whole-gene\nS rate", "HA2\nNS rate", "Epitope\nNS rate",
-      "Ridge\nNS rate"
-    )),
-    ci_lo     = estimate - 1.96 * std_error,
-    ci_hi     = estimate + 1.96 * std_error,
-    sig_fdr   = !is.na(p.fdr) & p.fdr < 0.05,
-    rate_type = factor(case_when(
-      region == "Terminal\nbranch rate"  ~ "Substitution\nrate",
-      grepl("NS", region)                ~ "Non-synonymous\nrate",
-      TRUE                               ~ "Synonymous\nrate"
-    ), levels = c("Substitution\nrate", "Non-synonymous\nrate", "Synonymous\nrate"))
-  )
-
 TYPE_COLOURS <- setNames(viridis(3, end = 0.85),
-                         c("Substitution\nrate", "Non-synonymous\nrate", "Synonymous\nrate"))
+                         c("Substitution\nrate", "Non-synonymous\nrate",
+                           "Synonymous\nrate"))
 
+# One model per row, so delta AIC is well defined per row.
 r2_ml <- ml_combined |>
   distinct(subtype, region, AIC, AIC_null) |>
   mutate(r2_label = sprintf("ΔAIC = %.1f", AIC_null - AIC))
@@ -287,19 +315,23 @@ p_multilevel <- ggplot(ml_combined,
             aes(x = -Inf, y = Inf, label = subtype),
             hjust = -0.1, vjust = 1.4, inherit.aes = FALSE,
             size = (BS - 1) / .pt, colour = "grey20", fontface = "bold") +
+  # Anchored to the panel edge rather than a fixed x: the SLAC coefficients
+  # span a wider range than the submitted ones, so a hardcoded x lands on the
+  # data for some rows.
   geom_text(data = r2_ml,
-            aes(x = 0.05, y = region, label = r2_label),
-            hjust = 0, inherit.aes = FALSE,
+            aes(x = Inf, y = region, label = r2_label),
+            hjust = 1.05, inherit.aes = FALSE,
             size = (BS - 3) / .pt, colour = "grey40") +
   scale_colour_manual(values = TYPE_COLOURS, name = NULL) +
   scale_fill_identity() +
   scale_y_discrete(limits = rev, expand = expansion(add = 0.4)) +
+  scale_x_continuous(expand = expansion(mult = c(0.05, 0.32))) +
   facet_wrap(~ subtype, ncol = 1) +
   geom_text(data = data.frame(subtype = "H3N2"),
-            aes(x = Inf, y = -Inf,
+            aes(x = -Inf, y = -Inf,
                 label = "● FDR < 0.05   ○ n.s."),
-            hjust = 1.05, vjust = -0.4, inherit.aes = FALSE,
-            size = (BS - 2) / .pt, colour = "grey30") +
+            hjust = -0.05, vjust = -0.4, inherit.aes = FALSE,
+            size = (BS - 3) / .pt, colour = "grey30") +
   labs(x = "Temperature coefficient", y = NULL, tag = "D") +
   common_theme +
   theme(legend.position    = "none",
@@ -333,42 +365,98 @@ prep_jk <- function(df) {
     ungroup()
 }
 
-jk_whole <- prep_jk(bind_rows(
-  read_csv(file.path(PATHS$rates, "jackknife", "H1", "pct60", "jackknife_results.csv"),
-           show_col_types = FALSE),
-  read_csv(file.path(PATHS$rates, "jackknife", "H3", "pct60", "jackknife_results.csv"),
-           show_col_types = FALSE)
-))
+# Both jackknives are now REVISED and fit the full model (six climate
+# predictors + year factor), so both store every coefficient, one row per
+# replicate per term. read_jackknife() reduces each to the coefficient being
+# plotted — without it a 1000-replicate run reads as 6000 samples.
+JK_COEF <- "scaled_temp"
 
-jk_epi <- prep_jk(bind_rows(
-  read_csv(file.path(PATHS$rates, "jackknife", "epitope",
-                     "H1_epitope_jackknife_results.csv"),
-           show_col_types = FALSE) |>
-    rename(any_of(c(std_error = "StdErr"))) |> mutate(gene = "H1"),
-  read_csv(file.path(PATHS$rates, "jackknife", "epitope",
-                     "H3_epitope_jackknife_results.csv"),
-           show_col_types = FALSE) |>
-    rename(any_of(c(std_error = "StdErr"))) |> mutate(gene = "H3")
-))
+# Whole gene: 03_rates_analysis/07_phylolm_jackknife.R, 60% draw size.
+jk_whole <- prep_jk(bind_rows(lapply(c("H1", "H3"), function(g) {
+  p <- file.path(PATHS$rates, "jackknife", g, "pct60",
+                 "jackknife_results.csv")
+  if (!file.exists(p))
+    stop("Whole-gene jackknife not found: ", p,
+         "\nRun 03_rates_analysis/07_phylolm_jackknife.R first.")
+  read_jackknife(p, JK_COEF) |> mutate(gene = g)
+})))
 
-# Shared y limits per gene (whole + epitope combined)
-# Both rows use the same breaks; ylims padded to ensure all breaks are visible
-JK_BREAKS <- seq(-0.20, 0.05, by = 0.05)
-ylims <- bind_rows(jk_whole, jk_epi) |>
-  mutate(lo = estimate - std_error, hi = estimate + std_error) |>
-  group_by(gene) |>
-  summarise(ymin = min(lo, na.rm = TRUE), ymax = max(hi, na.rm = TRUE),
-            .groups = "drop") |>
-  mutate(
-    ymin = pmin(ymin, min(JK_BREAKS) - 0.01),
-    ymax = pmax(ymax, max(JK_BREAKS) + 0.01)
-  )
+# Epitope: 04_epitope_analysis/09_jackknife_slac.R, dN response, 60% draw —
+# the same draw size as the whole-gene panel above, so the two rows are
+# comparable. The submitted version used a 60% draw capped at 1000, which left
+# H3 subsampling at 46% while H1 was at 60%.
+JK_RESPONSE <- "log_dN_rate"
+JK_DRAW     <- "pct60"
+jk_epi <- prep_jk(bind_rows(lapply(c("H1", "H3"), function(g) {
+  p <- file.path(PATHS$rates, "jackknife", "slac", JK_DRAW,
+                 paste0(g, "_epitope_", JK_RESPONSE, "_results.csv"))
+  if (!file.exists(p))
+    stop("Epitope jackknife not found: ", p,
+         "\nRun 04_epitope_analysis/09_jackknife_slac.R first.")
+  read_jackknife(p, JK_COEF) |> mutate(gene = g)
+})))
 
-make_jk_panel <- function(dat, ylim = NULL, gene_label, tag_letter,
+# Y range is shared WITHIN each row, not across the whole panel. The whole-gene
+# and epitope coefficients differ by roughly an order of magnitude (whole gene
+# spans about -0.08 to 0, epitope about -0.30 to 0), so forcing one scale on
+# both flattens the whole-gene series into a line. Each row therefore gets its
+# own limits, and the two genes within a row share them so they stay comparable.
+#' @param top  Fixed upper limit. Both rows top out at the same value so the
+#'   zero line sits at a comparable height and the four facets read as one
+#'   panel, even though their lower limits differ.
+#' @param grid Break spacing; NULL picks a value giving ~6 gridlines.
+#' @param bottom Fixed lower limit. Given with `top`, breaks run exactly from
+#'   bottom to top, so the label count is deterministic rather than depending on
+#'   whether a computed break falls inside the padded range.
+y_scale_for <- function(df, pad_frac = 0.03, grid = NULL,
+                        top = NULL, bottom = NULL) {
+  v   <- c(df$estimate - df$std_error, df$estimate + df$std_error)
+  raw <- range(v, na.rm = TRUE)
+  pad <- pad_frac * diff(raw)
+  if (is.null(grid)) {
+    cand <- c(0.005, 0.01, 0.02, 0.025, 0.05, 0.1)
+    grid <- cand[which.min(abs(diff(raw) / cand - 6))]
+  }
+  hi <- if (is.null(top))    raw[2] + pad else top
+  lo <- if (is.null(bottom)) raw[1] - pad else bottom
+  if (!is.null(bottom) && raw[1] < bottom)
+    warning("y lower limit ", bottom, " clips data reaching ", round(raw[1], 4))
+
+  brk <- if (!is.null(top) && !is.null(bottom)) {
+    seq(bottom, top, by = grid)
+  } else {
+    seq(floor(raw[1] / grid) * grid, ceiling(hi / grid) * grid, by = grid)
+  }
+  # Label precision from the grid's magnitude: a 0.03 grid still wants two
+  # decimals, so accuracy must not simply be the grid value.
+  list(lim = c(lo, hi), breaks = brk,
+       acc = 10^floor(log10(grid)))
+}
+
+# Each row gets a round ceiling and a break interval matched to its own span:
+# whole-gene coefficients run to about -0.10, epitope to about -0.37, so the
+# epitope row needs the coarser grid to avoid a crowded axis.
+# Five labels on each row. Whole gene: -0.10 to 0.02 at 0.03 gives
+# -0.10 -0.07 -0.04 -0.01 0.02, all two-decimal, and -0.10 clears the lowest
+# datum (-0.097). Epitope: 0.1 spacing lands on -0.3 -0.2 -0.1 0.0 0.1.
+Y_WHOLE <- y_scale_for(jk_whole, grid = 0.03, top = 0.02, bottom = -0.10)
+Y_EPI   <- y_scale_for(jk_epi,   grid = 0.1,  top = 0.1)
+
+message("Panel E y ranges — whole gene: [",
+        round(Y_WHOLE$lim[1], 3), ", ", round(Y_WHOLE$lim[2], 3),
+        "]   epitope: [", round(Y_EPI$lim[1], 3), ", ",
+        round(Y_EPI$lim[2], 3), "]")
+
+# show_ylab is separate from show_y: both stacked rows need y tick labels, but
+# only one should carry the axis title, otherwise patchwork draws it twice and
+# the two overlap.
+make_jk_panel <- function(dat, yscale, gene_label, tag_letter,
                           show_x = TRUE, show_legend = FALSE,
-                          show_y = TRUE) {
-  n_draw <- unique(dat$n)
-  lbl    <- paste0(gene_label, " — n = ", n_draw, " per draw")
+                          show_y = TRUE, show_ylab = show_y) {
+  n_draw  <- unique(dat$n)
+  pct_sig <- 100 * mean(dat$p.value < 0.05, na.rm = TRUE)
+  lbl <- sprintf("%s — n = %d per draw\n%.1f%% of draws p < 0.05",
+                 gene_label, n_draw, pct_sig)
 
   p <- ggplot(dat, aes(x = rank, y = estimate, colour = sig)) +
     geom_hline(yintercept = 0, linetype = "dashed",
@@ -385,13 +473,12 @@ make_jk_panel <- function(dat, ylim = NULL, gene_label, tag_letter,
                           override.aes = list(size = 2.5, alpha = 1),
                           nrow = 1)) +
     scale_y_continuous(
-      limits = c(ylims$ymin[ylims$gene == unique(dat$gene)],
-                 ylims$ymax[ylims$gene == unique(dat$gene)]),
-      breaks = JK_BREAKS,
-      labels = scales::label_number(accuracy = 0.01)
+      limits = yscale$lim,
+      breaks = yscale$breaks,
+      labels = scales::label_number(accuracy = yscale$acc)
     ) +
     labs(x   = if (show_x) "Sample rank (ordered by estimate)" else NULL,
-         y   = if (show_y) "Temperature coefficient" else NULL,
+         y   = if (show_ylab) "Temperature coefficient" else NULL,
          tag = tag_letter) +
     common_theme +
     theme(
@@ -400,6 +487,9 @@ make_jk_panel <- function(dat, ylim = NULL, gene_label, tag_letter,
       legend.direction     = "horizontal",
       legend.background    = element_rect(fill = "transparent", colour = NA),
       panel.grid.major.x   = element_blank(),
+      # Each row of panel E is only ~1.9in tall; the default axis title size
+      # overflows that and gets clipped.
+      axis.title.y         = element_text(size = BS - 2),
       plot.margin          = if (show_x)
         margin(0, 5.5, 5.5, 5.5)
       else
@@ -412,21 +502,24 @@ make_jk_panel <- function(dat, ylim = NULL, gene_label, tag_letter,
   p
 }
 
-p_jk_h1_whole <- make_jk_panel(filter(jk_whole, gene == "H1"),
-                                gene_label = "H1N1", tag_letter = "E",
-                                show_x = FALSE, show_y = TRUE)
-p_jk_h1_epi   <- make_jk_panel(filter(jk_epi,   gene == "H1"),
-                                gene_label = "H1N1 epitope", tag_letter = "",
-                                show_x = FALSE, show_y = FALSE)
-p_jk_h3_whole <- make_jk_panel(filter(jk_whole, gene == "H3"),
-                                gene_label = "H3N2", tag_letter = "",
-                                show_x = TRUE, show_y = TRUE,
-                                show_legend = TRUE)
-p_jk_h3_epi   <- make_jk_panel(filter(jk_epi,   gene == "H3"),
-                                gene_label = "H3N2 epitope", tag_letter = "",
-                                show_x = TRUE, show_y = FALSE)
+# Layout is analysis-major: whole gene on the top row, epitope on the bottom,
+# each row with its own y scale. Within a row the right-hand (H3N2) panel drops
+# its y tick labels because it shares the left panel's scale.
+p_jk_h1_whole <- make_jk_panel(filter(jk_whole, gene == "H1"), Y_WHOLE,
+                               gene_label = "H1N1 whole gene", tag_letter = "E",
+                               show_x = FALSE, show_y = TRUE)
+p_jk_h3_whole <- make_jk_panel(filter(jk_whole, gene == "H3"), Y_WHOLE,
+                               gene_label = "H3N2 whole gene", tag_letter = "",
+                               show_x = FALSE, show_y = FALSE)
+p_jk_h1_epi   <- make_jk_panel(filter(jk_epi,   gene == "H1"), Y_EPI,
+                               gene_label = "H1N1 epitope", tag_letter = "",
+                               show_x = TRUE, show_y = TRUE)
+p_jk_h3_epi   <- make_jk_panel(filter(jk_epi,   gene == "H3"), Y_EPI,
+                               gene_label = "H3N2 epitope", tag_letter = "",
+                               show_x = TRUE, show_y = FALSE,
+                               show_legend = TRUE)
 
-p_jk <- (p_jk_h1_whole | p_jk_h1_epi) / (p_jk_h3_whole | p_jk_h3_epi) +
+p_jk <- (p_jk_h1_whole | p_jk_h3_whole) / (p_jk_h1_epi | p_jk_h3_epi) +
   plot_layout(heights = c(1, 1))
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -456,4 +549,8 @@ ggsave(file.path(out_dir, "fig_main_E.pdf"), p_jk,
 ggsave(file.path(out_dir, "fig_main_C.pdf"), p_forest,
        width = 8.27 / 2, height = 10 * 1.4 / 3.2)
 
-message("Saved: paper/figures/fig_main.png / .pdf / fig_main_B.pdf / fig_main_C.pdf / fig_main_E.pdf")
+# Panel D: same geometry as C — the two share row 2 at half width each
+ggsave(file.path(out_dir, "fig_main_D.pdf"), p_multilevel,
+       width = 8.27 / 2, height = 10 * 1.4 / 3.2)
+
+message("Saved to paper/figures/: fig_main.png / .pdf / fig_main_B.pdf / fig_main_C.pdf / fig_main_D.pdf / fig_main_E.pdf")

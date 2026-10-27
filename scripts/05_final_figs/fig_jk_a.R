@@ -19,16 +19,22 @@ suppressPackageStartupMessages({
 })
 
 source(here("config.R"))
+source(here("R", "jackknife_utils.R"))
+
+# Coefficient to pull from the long-format jackknife results
+# (one row per replicate per term). Override per run if needed.
+JK_COEF <- "scaled_temp"
+
 
 out_dir <- here("paper", "figures")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # ── Load jackknife results ────────────────────────────────────────────────────
 jk <- bind_rows(
-  read_csv(file.path(PATHS$rates, "jackknife", "H1",
-                     "jackknife_results.csv"), show_col_types = FALSE),
-  read_csv(file.path(PATHS$rates, "jackknife", "H3",
-                     "jackknife_results.csv"), show_col_types = FALSE)
+  read_jackknife(file.path(PATHS$rates, "jackknife", "H1",
+                           "jackknife_results.csv"), JK_COEF),
+  read_jackknife(file.path(PATHS$rates, "jackknife", "H3",
+                           "jackknife_results.csv"), JK_COEF)
 ) |>
   mutate(
     subtype = ifelse(gene == "H1", "H1N1 (H1)", "H3N2 (H3)"),

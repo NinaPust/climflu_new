@@ -54,7 +54,21 @@ trim_codons <- function(alignment, gap_threshold = 0.5) {
             "with gap frequency > ", gap_threshold)
   }
 
-  ape::as.DNAbin(char_mat[, keep_cols, drop = FALSE])
+  # Reviewer 1 (major comment 2) asks how many codon positions gap-trimming
+  # discards. The counts are attached as attributes so callers can log them
+  # without re-deriving the untrimmed alignment, which is not retained on disk.
+  out <- ape::as.DNAbin(char_mat[, keep_cols, drop = FALSE])
+  attr(out, "trim_stats") <- list(
+    gap_threshold      = gap_threshold,
+    n_seq              = n_seq,
+    codons_before      = n_codons,
+    codons_removed     = n_removed / 3,
+    codons_after       = n_codons - n_removed / 3,
+    pct_codons_removed = round(100 * (n_removed / 3) / n_codons, 2),
+    nt_before          = n_cols,
+    nt_after           = sum(keep_cols)
+  )
+  out
 }
 
 

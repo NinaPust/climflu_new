@@ -10,8 +10,14 @@
 #   count descending). No results survive FDR correction, showing climate
 #   does not selectively drive specific amino acid changes.
 #
-# INPUT:  data/epitope/{H1,H3}_{ridge,epitope}_mutations.csv
-#         data/rates/{ridge,epitope}_mutation_climate_results.csv
+# REVISED SOURCES. Mutation calls now come from TreeTime maximum-likelihood
+# ancestral sequences (06_ml_mutations.R) rather than phangorn parsimony, and
+# the climate tests from 07_wilcoxon_ml.R. The statistical design in 19 is
+# unchanged from the submitted archived script 11_wilcoxon_climate.R, so any difference in this figure is
+# attributable to the ancestral reconstruction rather than to the test.
+#
+# INPUT:  data/epitope/{H1,H3}_{ridge,epitope}_mutations_ml.csv
+#         data/rates/{ridge,epitope}_mutation_climate_results_ml.csv
 # OUTPUT: paper/figures/fig2_mutations.png / .pdf
 
 suppressPackageStartupMessages({
@@ -51,7 +57,7 @@ HEAT_HIGH <- viridis(3, option = "plasma")[3]
 # ── Data loading helpers ──────────────────────────────────────────────────────
 load_counts <- function(gene, region, top_n = NULL) {
   path <- file.path(here("data", "epitope"),
-                    paste0(gene, "_", region, "_mutations.csv"))
+                    paste0(gene, "_", region, "_mutations_ml.csv"))
   df <- read_csv(path, show_col_types = FALSE) |>
     count(change, name = "n") |>
     filter(n > 5) |>
@@ -64,7 +70,7 @@ load_counts <- function(gene, region, top_n = NULL) {
 load_heat <- function(region, gene, mut_levels) {
   subtype_val <- ifelse(gene == "H1", "H1N1", "H3N2")
   read_csv(file.path(PATHS$rates,
-                     paste0(region, "_mutation_climate_results.csv")),
+                     paste0(region, "_mutation_climate_results_ml.csv")),
            show_col_types = FALSE) |>
     filter(subtype == subtype_val,
            mutation %in% mut_levels) |>

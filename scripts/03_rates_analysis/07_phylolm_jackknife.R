@@ -2,13 +2,18 @@
 #
 # PURPOSE: Block jackknife subsampling for phylolm temperature analysis.
 #          Runs 100 random samples at four draw sizes (1000 fixed, 15%, 30%,
-#          60% of dataset), runs phylolm (log_rate ~ scaled_temp +
-#          as.factor(year)) on each, and saves per-gene results for downstream
-#          robustness plots.
+#          60% of dataset), runs phylolm on each, and saves per-gene results for
+#          downstream robustness plots.
 #
-# INPUT:
+#          REVISED: fits the FULL model (six climate predictors + year factor),
+#          matching 02_phylolm.R, instead of the submitted temperature-only
+#          formula. Results are long format, one row per replicate per term.
+#
+# INPUT  (from the ORIGINAL data tree — the revision did not change these):
 #   data/rates/{gene}_rates.csv
 #   data/trees/timed/{gene}_timetree.nwk
+#
+# OUTPUT goes to data/rates/, leaving the submitted jackknife intact.
 #
 # OUTPUT (per draw size):
 #   data/rates/jackknife/{gene}/jackknife_results.csv          # n=1000 (legacy path)
@@ -35,6 +40,17 @@ source(here("R", "climate_utils.R"))
 N_SAMPLES   <- 1000L
 MASTER_SEED <- 42L
 
+# REVISED: the full model, matching 03_rates_analysis/02_phylolm.R. The
+# submitted version jackknifed `log_rate ~ scaled_temp + as.factor(year)`, a
+# reduced formula, so its temperature coefficient did not mean the same thing as
+# the one reported in the figures — with the other climate terms absent, the
+# temperature coefficient absorbed whatever they would have explained. Every
+# coefficient is now stored (long format, one row per replicate per term) so any
+# predictor can be plotted later without refitting.
+PRED <- c("scaled_temp", "scaled_humidity",
+          "scaled_delta_temp", "scaled_delta_humidity",
+          "scaled_sampling_density", "scaled_pop_density")
+
 # Draw sizes: fixed count (n1000) or fraction of dataset (pct15/30/60).
 # n1000 uses the legacy top-level path; percentage sizes use a subdirectory.
 DRAW_SIZES <- list(
@@ -54,8 +70,8 @@ genes <- if ("--gene" %in% args) {
 for (gene in genes) {
   message("\n[", gene, "] Loading data...")
 
-  rates_path <- file.path(PATHS$rates, paste0(gene, "_rates.csv"))
-  tree_path  <- file.path(PATHS$trees_timed, paste0(gene, "_timetree.nwk"))
+  rates_path <- here("data", "rates", paste0(gene, "_rates.csv"))
+  tree_path  <- here("data", "trees", "timed", paste0(gene, "_timetree.nwk"))
 
   if (!file.exists(rates_path)) {
     warning("Rates file not found: ", rates_path)
@@ -85,13 +101,18 @@ for (gene in genes) {
 
   df <- df |>
     filter(accession %in% common) |>
-    filter(!is.na(scaled_temp), !is.na(log_rate)) |>
+    filter(!is.na(log_rate), if_all(all_of(intersect(PRED, names(df))), \(x) !is.na(x))) |>
     arrange(match(accession, tree$tip.label))
   tree <- keep.tip(tree, df$accession)
   rownames(df) <- df$accession
 
   n_avail <- nrow(df)
+  preds      <- intersect(PRED, names(df))
+  year_term  <- if ("year" %in% names(df)) "as.factor(year)" else NULL
+  jk_formula <- as.formula(paste("log_rate ~",
+                                 paste(c(preds, year_term), collapse = " + ")))
   message("  ", n_avail, " taxa available for subsampling")
+  message("  formula: ", deparse(jk_formula))
 
   if (n_avail < 10) {
     warning("  Too few taxa for jackknife, skipping ", gene)
@@ -139,7 +160,7 @@ for (gene in genes) {
 
       fit <- tryCatch(
         phylolm(
-          log_rate ~ scaled_temp + as.factor(year),
+          jk_formula,
           data  = sub_df,
           phy   = sub_tree,
           model = PARAMS$phylolm_method
@@ -153,10 +174,14 @@ for (gene in genes) {
       if (is.null(fit)) next
 
       coef_mat <- summary(fit)$coefficients
-      if (!"scaled_temp" %in% rownames(coef_mat)) next
+      keep_terms <- intersect(PRED, rownames(coef_mat))
+      if (length(keep_terms) == 0) next
 
       se_col <- intersect(
         c("StdErr", "Std.Error", "std_error"), colnames(coef_mat)
+      )[1]
+      t_col <- intersect(
+        c("t.value", "t value", "z.value"), colnames(coef_mat)
       )[1]
 
       results_list[[i]] <- tibble(
@@ -164,10 +189,11 @@ for (gene in genes) {
         sample_id = i,
         n         = actual_size,
         draw_size = ds$label,
-        estimate  = coef_mat["scaled_temp", "Estimate"],
-        std_error = coef_mat["scaled_temp", se_col],
-        t_value   = coef_mat["scaled_temp", "t.value"],
-        p.value   = coef_mat["scaled_temp", "p.value"],  # nolint: object_name_linter
+        term      = keep_terms,
+        estimate  = coef_mat[keep_terms, "Estimate"],
+        std_error = coef_mat[keep_terms, se_col],
+        t_value   = if (!is.na(t_col)) coef_mat[keep_terms, t_col] else NA_real_,
+        p.value   = coef_mat[keep_terms, "p.value"],  # nolint: object_name_linter
         lambda    = fit$optpar
       )
 

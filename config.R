@@ -28,6 +28,7 @@ PATHS <- list(
   test_rates        = here("data", "test", "rates"),
   codeml     = here("data", "codeml"),
   yn00       = here("data", "yn00"),
+  epitope       = here("data", "epitope"),
   rates         = here("data", "rates"),
   rates_phylolm = here("data", "rates", "phylolm"),
   rates_brms    = here("data", "rates", "brms"),
@@ -43,7 +44,8 @@ TOOLS <- list(
   maple    = "/home/nina/influenza_env/programs/maple",
   codeml   = "/home/nina/paml4.8/bin/codeml",
   yn00     = "/home/nina/paml4.8/bin/yn00",
-  treetime = "/home/nina/miniforge3/envs/treetime_env/bin/treetime"
+  treetime = "/home/nina/miniforge3/envs/treetime_env/bin/treetime",
+  hyphy    = "/home/nina/miniforge3/envs/hyphy_env/bin/hyphy"
 )
 
 # Warn if any tool is not found

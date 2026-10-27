@@ -29,8 +29,10 @@ suppressPackageStartupMessages({
 })
 
 source(here("config.R"))
+source(here("R", "jackknife_utils.R"))
 
 args  <- commandArgs(trailingOnly = TRUE)
+JK_COEF <- if ("--coef" %in% args) args[which(args == "--coef") + 1] else "scaled_temp"
 genes <- if ("--gene" %in% args) {
   args[which(args == "--gene") + 1]
 } else {
@@ -81,7 +83,10 @@ for (gene in genes) {
 
     message("  [", ds$label, "] Generating plots...")
 
-    results <- read_csv(res_path, show_col_types = FALSE)
+    # Revised results store every coefficient (one row per replicate per
+    # term), so reduce to the one being plotted. read_jackknife() also accepts
+    # the submitted format, which had no `term` column.
+    results <- read_jackknife(res_path, term = JK_COEF)
     if ("StdErr" %in% names(results) && !"std_error" %in% names(results)) {
       results <- rename(results, std_error = StdErr)
     }
